@@ -1,25 +1,22 @@
-// GLOBAL CONFIG (DENGAN NILAI BARU DARI PENGGUNA)
+// GLOBAL CONFIG (Tidak diubah dari jawaban terakhir, hanya memastikan kelengkapan)
 const global = {
   domain: "https://mikudevprivate.pteropanelku.biz.id",
-  apikey: "ptla_7gss1IvRmWISvixYyZ4fEQgPD6wLvakmAeZMyoT9HFQ", // API PTERODACTYL
+  apikey: "ptla_7gss1IvRmWISvixYyZ4fEQgPD6wLvakmAeZMyoT9HFQ",
   nestid: "5",
   egg: "15",
   loc: "1",
   
-  // --- KONFIGURASI UNTUK API QRIS BARU (https://apii.ryuuxiao.biz.id) ---
   qrisBaseUrl: "https://apii.ryuuxiao.biz.id", 
-  qrisApiToken: "RyuuXiao", // Diperbarui
-  qrisUsername: "adjie22", // Diperbarui
-  qrisOrderToken: "1451589:fsoScMnGEp6kjIQav2L7l0ZWgd1NXVer", // Diperbarui
+  qrisApiToken: "RyuuXiao", 
+  qrisUsername: "adjie22", 
+  qrisOrderToken: "1451589:fsoScMnGEp6kjIQav2L7l0ZWgd1NXVer", 
 
-  // Variabel untuk menyimpan data QRIS saat ini
   CURRENT_QRIS_KEY: "current_qris_session",
   STORAGE_KEY: "riwayat_transaksi_panel",
 };
 
-// STRUKTUR DATA HARGA DAN SPESIFIKASI PANEL LENGKAP
+// PACKAGE CONFIG (Tidak diubah dari jawaban terakhir, hanya memastikan kelengkapan)
 const PACKAGE_CONFIG = {
-  // value: { nama: 'Xgb', harga: X, memo: X MB, disk: X MB, cpu: X% }
   '2000':  { nama: '1gb', harga: 2000,  memo: 1048,  disk: 2000, cpu: 30  },
   '3000':  { nama: '2gb', harga: 3000,  memo: 2048,  disk: 2000, cpu: 50  },
   '4000':  { nama: '3gb', harga: 4000,  memo: 3048,  disk: 2000, cpu: 75  },
@@ -30,36 +27,30 @@ const PACKAGE_CONFIG = {
   '9000':  { nama: '8gb', harga: 9000,  memo: 8048,  disk: 2000, cpu: 200 },
   '10000': { nama: '9gb', harga: 10000, memo: 9048,  disk: 2000, cpu: 225 },
   '12000': { nama: '10gb', harga: 12000, memo: 10048, disk: 2000, cpu: 250 },
-  '15000': { nama: 'unli', harga: 15000, memo: 0,     disk: 0,    cpu: 0 } // Asumsi unli disk dan ram = 0
+  '15000': { nama: 'unli', harga: 15000, memo: 0,     disk: 0,    cpu: 0 } 
 };
 
 
 function $(id){return document.getElementById(id);}
 
-// Fungsi Pembantu
+// ... (Fungsi Pembantu: toRupiah, getSelectedRamInfo, updateTotalHarga) ...
 function toRupiah(number) {
-    // Fungsi ini aman untuk input non-angka atau null, akan mengembalikan 'Rp0' jika gagal.
     if (isNaN(number) || number === null) return 'RpN/A';
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number).replace('Rp', 'Rp');
 }
 function getSelectedRamInfo() {
   const selectEl = $("ram");
-  const selectedValue = selectEl.value; // Mengambil value (harga)
-  
-  // Cari info paket dari PACKAGE_CONFIG berdasarkan harga (value)
+  const selectedValue = selectEl.value; 
   const config = PACKAGE_CONFIG[selectedValue]; 
-  
-  // Mengembalikan data lengkap atau default jika tidak ditemukan (penting untuk cek validasi)
   return config || { nama: 'N/A', harga: 0, memo: 0, disk: 0, cpu: 0 };
 }
-
-// Deteksi Harga Otomatis & Update Display
 function updateTotalHarga() {
   const { harga } = getSelectedRamInfo();
   $("totalHarga").textContent = `Total Harga: ${toRupiah(harga)}`;
 }
+// ...
 
-// Fungsi Reset Input (Tombol Refresh Data)
+// Fungsi Reset Input (Tombol Refresh Data) - Tidak ada perubahan
 function refreshInput(){
   const usernameEl=$("username"); 
   const ramEl=$("ram");
@@ -69,10 +60,10 @@ function refreshInput(){
   alert("Input username dan pilihan panel berhasil di-reset.");
 }
 
-// Dipanggil saat halaman dimuat
+// 1. Perbaikan: Muat QRIS yang tersimpan dan isi formulir jika QRIS aktif
 function loadSavedQris() {
     const savedQris = localStorage.getItem(global.CURRENT_QRIS_KEY);
-    if (!savedQris) return;
+    if (!savedQris) return false; // Mengembalikan false jika tidak ada sesi
 
     try {
         const qrisData = JSON.parse(savedQris);
@@ -80,8 +71,13 @@ function loadSavedQris() {
         
         if (qrisData.waktuKadaluarsa && qrisData.waktuKadaluarsa < now) {
             localStorage.removeItem(global.CURRENT_QRIS_KEY);
-            return;
+            return false;
         }
+        
+        // Mengisi kembali formulir saat QRIS aktif
+        $("username").value = qrisData.username || '';
+        $("ram").value = qrisData.harga ? qrisData.harga.toString() : '';
+        updateTotalHarga(); // Update tampilan harga
 
         $("qrisImage").src = qrisData.qrUrl;
         $("detailPembayaran").textContent = qrisData.detailText;
@@ -89,20 +85,21 @@ function loadSavedQris() {
         $("btnBatal").classList.remove("hidden");
         
         mulaiCekMutasi(qrisData.paymentId, qrisData.username, qrisData.harga);
+        return true; // Mengembalikan true jika sesi dimuat
 
     } catch(e) {
         console.error("Gagal memuat QRIS tersimpan:", e);
         localStorage.removeItem(global.CURRENT_QRIS_KEY);
+        return false;
     }
 }
 
-// QRIS REAL
+// ... (Fungsi buatQris, mulaiCekMutasi, buatServerPTLA, batalQris - Tidak ada perubahan) ...
 async function buatQris(){
   const username=$("username").value.trim();
   const { harga: ramHarga, nama: ramNama } = getSelectedRamInfo(); 
   const ramValue = ramHarga;
 
-  // PERBAIKAN 1: Cek apakah harga > 0 (artinya opsi sudah dipilih)
   if(!username){ alert("Username tidak boleh kosong."); return; }
   if(ramValue <= 0){ alert("Pilih paket RAM terlebih dahulu."); return; } 
 
@@ -167,8 +164,6 @@ async function buatQris(){
     alert("Terjadi kesalahan membuat QRIS.");
   }
 }
-
-// AUTO MUTASI
 let mutasiInterval;
 
 async function mulaiCekMutasi(paymentId, username, ramHarga){
@@ -225,8 +220,6 @@ async function mulaiCekMutasi(paymentId, username, ramHarga){
     }
   },10000);
 }
-
-// PTLA CREATE SERVER DENGAN LOGIKA SPESIFIKASI BARU
 async function buatServerPTLA(username, ramHarga){
   const config = PACKAGE_CONFIG[ramHarga.toString()];
 
@@ -244,10 +237,7 @@ async function buatServerPTLA(username, ramHarga){
       user: username
     };
     
-    // Khusus untuk paket UNLI, mungkin perlu logika khusus jika Pterodactyl menolak 0
     if (config.nama === 'unli') {
-        // Asumsi unli di panel berarti nilai yang sangat besar atau nilai default yang valid,
-        // misalnya, 999999 MB RAM, 999999 MB Disk, dan 100% CPU.
         payload.ram = 999999; 
         payload.disk = 999999;
         payload.cpu = 100;
@@ -276,7 +266,6 @@ async function buatServerPTLA(username, ramHarga){
     alert("Gagal membuat server.");
   }
 }
-
 function batalQris(){
   if (mutasiInterval) clearInterval(mutasiInterval);
   localStorage.removeItem(global.CURRENT_QRIS_KEY); 
@@ -285,11 +274,12 @@ function batalQris(){
   $("btnBatal").classList.add("hidden");
   $("qrisImage").src="";
   $("detailPembayaran").textContent="";
+  // Reset input setelah QRIS dibatalkan/selesai
+  refreshInput(); 
   alert("Pembayaran QRIS dibatalkan.");
 }
 
-
-// RIWAYAT
+// ... (Fungsi Riwayat - Tidak ada perubahan) ...
 function getRiwayat(){
   try{
     const raw=localStorage.getItem(global.STORAGE_KEY);
@@ -305,7 +295,6 @@ function simpanRiwayat(d){
   localStorage.setItem(global.STORAGE_KEY,JSON.stringify(l));
 }
 
-// Render Riwayat di Modal (Popup) - Hanya Sukses
 function renderRiwayat(){
   const c=$("riwayatList");
   const list=getRiwayat();
@@ -335,7 +324,6 @@ function renderRiwayat(){
   });
 }
 
-// Fungsi Hapus Riwayat
 function hapusRiwayat(uniqueId) {
     if (!confirm("Apakah Anda yakin ingin menghapus riwayat ini?")) return;
 
@@ -368,6 +356,14 @@ function setupPullToRefreshBlocker(){
 
 window.addEventListener("load",()=>{
     setupPullToRefreshBlocker();
-    updateTotalHarga(); 
-    loadSavedQris();    
+    
+    // 1. Logika muat QRIS yang diperbaiki:
+    const qrisActive = loadSavedQris(); 
+    
+    // Jika tidak ada QRIS aktif, baru inisialisasi input (agar tidak me-reset input yang sudah terisi)
+    if (!qrisActive) {
+        // Cek apakah ada nilai di URL atau default lainnya di sini jika perlu.
+        // Untuk saat ini, kita hanya memastikan updateTotalHarga dipanggil.
+        updateTotalHarga(); 
+    }
 });
