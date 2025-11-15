@@ -1,25 +1,117 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Pembayaran Panel</title>
+  <meta charset="UTF-8" />
+  <title>Buy Panel Otomatis</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Pembayaran Panel</h1>
-  <input type="text" id="username" placeholder="Username">
-  <select id="pilihRam">
-    <option value="1gb">1 GB</option>
-    <option value="2gb">2 GB</option>
-    <option value="unli">Unlimited</option>
-  </select>
-  <button onclick="buatPembayaran()">Bayar Sekarang</button>
+  <div class="page">
 
-  <div id="infoPembayaran" class="hidden">
-    <img id="qrImage" src="" alt="QRIS">
-    <pre id="detailPembayaran"></pre>
+    <!-- HEADER / HERO -->
+    <header class="hero">
+      <div class="hero-left">
+        <div class="avatar">
+          <span>P</span>
+        </div>
+        <div>
+          <h1 class="hero-title">Buy Panel Otomatis</h1>
+          <p class="hero-subtitle">
+            Pilih paket, bayar via QRIS, panel langsung dibuat otomatis ⚡
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+
+      <!-- FORM PEMESANAN -->
+      <section class="card">
+        <h2 class="card-title">Form Pemesanan</h2>
+        <p class="card-desc">
+          Masukkan username dan pilih paket panel yang ingin dibeli. Setelah pembayaran sukses, server akan dibuat otomatis.
+        </p>
+
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            placeholder="Masukkan username panel"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="pilihRam">Pilih Paket Panel</label>
+          <select id="pilihRam">
+            <option value="1gb">1 GB</option>
+            <option value="2gb">2 GB</option>
+            <option value="unli">Unlimited</option>
+          </select>
+          <small class="hint">Harga akan muncul otomatis saat membuat QRIS.</small>
+        </div>
+
+        <div class="buttons-row">
+          <button class="btn btn-primary" onclick="buatPembayaran()">
+            Buat QRIS &amp; Order
+          </button>
+          <button
+            class="btn btn-ghost"
+            type="button"
+            onclick="resetForm()"
+          >
+            Refresh Input
+          </button>
+        </div>
+
+        <button
+          class="btn btn-outline full-width"
+          type="button"
+          onclick="toggleDetail()"
+        >
+          Lihat Detail Pembayaran
+        </button>
+      </section>
+
+      <!-- DETAIL PEMBAYARAN -->
+      <section id="infoPembayaran" class="card hidden">
+        <h2 class="card-title">Detail Pembayaran</h2>
+        <p class="card-desc">
+          Scan QRIS di bawah ini lalu cek detail transaksi pada kolom informasi.
+        </p>
+
+        <div class="qr-wrapper">
+          <img id="qrImage" src="" alt="QRIS" />
+        </div>
+
+        <pre id="detailPembayaran" class="detail-text"></pre>
+      </section>
+
+      <!-- RIWAYAT / FOOTER INFO -->
+      <section class="card card-footer">
+        <p class="footer-text">
+          Butuh cek pesanan secara manual? Simpan data pembayaran yang tampil setelah order berhasil.
+        </p>
+      </section>
+    </main>
   </div>
 
   <script src="script.js"></script>
+  <script>
+    // fungsi tambahan kecil untuk tombol Refresh dan toggle detail
+    function resetForm() {
+      document.getElementById("username").value = "";
+      document.getElementById("pilihRam").selectedIndex = 0;
+      document.getElementById("detailPembayaran").textContent = "";
+      document.getElementById("qrImage").src = "";
+      document.getElementById("infoPembayaran").classList.add("hidden");
+    }
+
+    function toggleDetail() {
+      const info = document.getElementById("infoPembayaran");
+      info.classList.toggle("hidden");
+    }
+  </script>
 </body>
-</html>
+            </html>
