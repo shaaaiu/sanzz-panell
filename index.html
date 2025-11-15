@@ -8,7 +8,6 @@
 </head>
 <body>
   <div class="page">
-    <!-- HEADER / HERO -->
     <header class="hero">
       <div class="hero-left">
         <div class="avatar">
@@ -23,9 +22,7 @@
       </div>
     </header>
 
-    <!-- MAIN CONTENT -->
     <main class="main">
-      <!-- FORM PEMESANAN -->
       <section class="card">
         <h2 class="card-title">Form Pemesanan</h2>
         <p class="card-desc">
@@ -44,20 +41,22 @@
 
         <div class="form-group">
           <label for="ram">Pilih Paket RAM</label>
-          <select id="ram">
-            <option value="1gb">1 GB</option>
-            <option value="2gb">2 GB</option>
-            <option value="3gb">3 GB</option>
-            <option value="4gb">4 GB</option>
+          <select id="ram" onchange="updateTotalHarga()">
+            <option value="" disabled selected>Pilih paket...</option>
+            <option value="10000" data-ram="1gb">1 GB - Rp10.000</option>
+            <option value="20000" data-ram="2gb">2 GB - Rp20.000</option>
+            <option value="30000" data-ram="3gb">3 GB - Rp30.000</option>
+            <option value="40000" data-ram="4gb">4 GB - Rp40.000</option>
           </select>
         </div>
-
+        
+        <p id="totalHarga" class="total-harga">Total Harga: Rp0</p>
         <div class="buttons-row">
           <button class="btn btn-primary" type="button" onclick="buatQris()">
             Buat QRIS
           </button>
-          <button class="btn btn-ghost" type="button" onclick="resetForm()">
-            Reset Input
+          <button class="btn btn-ghost" type="button" onclick="refreshInput()">
+            Refresh Input
           </button>
           <button
             id="btnBatal"
@@ -72,7 +71,6 @@
         <p id="loadingText" class="loading hidden">Membuat QRIS...</p>
       </section>
 
-      <!-- QRIS PEMBAYARAN -->
       <section id="qrisSection" class="card hidden">
         <h2 class="card-title">QRIS Pembayaran</h2>
         <p class="card-desc">
@@ -86,18 +84,29 @@
         <pre id="detailPembayaran" class="detail-text"></pre>
       </section>
 
-      <!-- RIWAYAT TRANSAKSI -->
       <section class="card">
         <h2 class="card-title">Riwayat Transaksi</h2>
         <p class="card-desc">
           Hanya tersimpan di perangkat ini. Gunakan riwayat jika data pembayaran
           yang kamu simpan hilang.
         </p>
-        <div id="riwayatList" class="riwayat-list"></div>
-      </section>
+        <button class="btn btn-secondary" type="button" onclick="openRiwayat()">
+          Lihat Riwayat Transaksi
+        </button>
+        </section>
     </main>
   </div>
 
+  <div id="riwayatModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Daftar Riwayat Transaksi</h3>
+        <span class="close-btn" onclick="closeRiwayat()">&times;</span>
+      </div>
+      <div id="riwayatList" class="modal-body riwayat-list">
+        </div>
+    </div>
+  </div>
   <script src="script.js"></script>
 </body>
 </html>
