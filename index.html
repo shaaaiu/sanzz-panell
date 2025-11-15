@@ -1,117 +1,61 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>Buy Panel Otomatis</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Payment</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="page">
+<header class="topbar">Panel Payment</header>
 
-    <!-- HEADER / HERO -->
-    <header class="hero">
-      <div class="hero-left">
-        <div class="avatar">
-          <span>P</span>
-        </div>
-        <div>
-          <h1 class="hero-title">Buy Panel Otomatis</h1>
-          <p class="hero-subtitle">
-            Pilih paket, bayar via QRIS, panel langsung dibuat otomatis ⚡
-          </p>
-        </div>
-      </div>
-    </header>
+<main class="container">
+<section class="card">
+<h2>Pemesanan Panel</h2>
 
-    <!-- MAIN CONTENT -->
-    <main class="main">
+<label>Username</label>
+<input id="username" placeholder="Masukkan username">
 
-      <!-- FORM PEMESANAN -->
-      <section class="card">
-        <h2 class="card-title">Form Pemesanan</h2>
-        <p class="card-desc">
-          Masukkan username dan pilih paket panel yang ingin dibeli. Setelah pembayaran sukses, server akan dibuat otomatis.
-        </p>
+<label>Pilih Paket RAM</label>
+<select id="ram">
+<option value="1gb">1 GB</option>
+<option value="2gb">2 GB</option>
+<option value="3gb">3 GB</option>
+</select>
 
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input
-            type="text"
-            id="username"
-            placeholder="Masukkan username panel"
-          />
-        </div>
+<div class="btn-row">
+<button onclick="buatQris()">Buat QRIS</button>
+<button onclick="resetForm()">Reset Input</button>
+<button class="danger" onclick="batalQris()">Batalkan</button>
+</div>
 
-        <div class="form-group">
-          <label for="pilihRam">Pilih Paket Panel</label>
-          <select id="pilihRam">
-            <option value="1gb">1 GB</option>
-            <option value="2gb">2 GB</option>
-            <option value="unli">Unlimited</option>
-          </select>
-          <small class="hint">Harga akan muncul otomatis saat membuat QRIS.</small>
-        </div>
+<div id="loading" class="loading hidden">Membuat QRIS...</div>
 
-        <div class="buttons-row">
-          <button class="btn btn-primary" onclick="buatPembayaran()">
-            Buat QRIS &amp; Order
-          </button>
-          <button
-            class="btn btn-ghost"
-            type="button"
-            onclick="resetForm()"
-          >
-            Refresh Input
-          </button>
-        </div>
+</section>
 
-        <button
-          class="btn btn-outline full-width"
-          type="button"
-          onclick="toggleDetail()"
-        >
-          Lihat Detail Pembayaran
-        </button>
-      </section>
+<section id="qrisSection" class="card hidden">
+<h2>QRIS Pembayaran</h2>
+<img id="qrisImage" class="qris">
+<pre id="detail"></pre>
+</section>
 
-      <!-- DETAIL PEMBAYARAN -->
-      <section id="infoPembayaran" class="card hidden">
-        <h2 class="card-title">Detail Pembayaran</h2>
-        <p class="card-desc">
-          Scan QRIS di bawah ini lalu cek detail transaksi pada kolom informasi.
-        </p>
+<section class="card">
+<h2>Riwayat Transaksi</h2>
+<pre id="riwayat"></pre>
+</section>
+</main>
 
-        <div class="qr-wrapper">
-          <img id="qrImage" src="" alt="QRIS" />
-        </div>
+<script src="script.js"></script>
 
-        <pre id="detailPembayaran" class="detail-text"></pre>
-      </section>
-
-      <!-- RIWAYAT / FOOTER INFO -->
-      <section class="card card-footer">
-        <p class="footer-text">
-          Butuh cek pesanan secara manual? Simpan data pembayaran yang tampil setelah order berhasil.
-        </p>
-      </section>
-    </main>
-  </div>
-
-  <script src="script.js"></script>
-  <script>
-    // fungsi tambahan kecil untuk tombol Refresh dan toggle detail
-    function resetForm() {
-      document.getElementById("username").value = "";
-      document.getElementById("pilihRam").selectedIndex = 0;
-      document.getElementById("detailPembayaran").textContent = "";
-      document.getElementById("qrImage").src = "";
-      document.getElementById("infoPembayaran").classList.add("hidden");
-    }
-
-    function toggleDetail() {
-      const info = document.getElementById("infoPembayaran");
-      info.classList.toggle("hidden");
-    }
-  </script>
+<script>
+// cegah pull-to-refresh
+let y0=0;
+window.addEventListener("touchstart",e=>y0=e.touches[0].clientY);
+window.addEventListener("touchmove",e=>{
+ if(window.scrollY===0 && e.touches[0].clientY - y0 > 10){
+   e.preventDefault();
+ }
+},{passive:false});
+</script>
 </body>
-            </html>
+</html>
