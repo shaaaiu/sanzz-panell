@@ -7,7 +7,7 @@ const global = {
   // Kunci ini digunakan untuk membuat akun pengguna (User) di API admin/panel
   admin_url: "https://panel.xiao-store.web.id", 
   // Catatan: admin_apikey masih placeholder. Harap ganti!
-  admin_apikey: "ptlc_GANTI_DENGAN_KUNCI_PTLC_ANDA", 
+  admin_apikey: "ptla_sRRmcKRjicoJfsioKKZqlb8221avLOQlLdzNFJifzzE", 
   
   nestid: "5",
   egg: "15",
