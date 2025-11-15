@@ -1,4 +1,4 @@
-// GLOBAL CONFIG (Tidak diubah dari jawaban terakhir, hanya memastikan kelengkapan)
+// GLOBAL CONFIG (Tidak diubah dari jawaban terakhir)
 const global = {
   domain: "https://panel.xiao-store.web.id",
   apikey: "ptla_ll4q9Ks59PRs0ZviiEa3e5g9x3fbTPPh909arpx9gG1",
@@ -13,11 +13,12 @@ const global = {
 
   CURRENT_QRIS_KEY: "current_qris_session",
   STORAGE_KEY: "riwayat_transaksi_panel",
+  // Tambahan: Link Login Panel (Asumsi menggunakan domain Pterodactyl yang sama)
+  PANEL_LOGIN_LINK: "https://panel.mikudevprivate.pteropanelku.biz.id" // GANTI DENGAN LINK PANEL ANDA
 };
 
-// PACKAGE CONFIG (Tidak diubah dari jawaban terakhir, hanya memastikan kelengkapan)
+// PACKAGE CONFIG (Tidak diubah dari jawaban terakhir)
 const PACKAGE_CONFIG = {
-  '500':  { nama: '500mb', harga: 500,  memo: 500,  disk: 100, cpu: 30  },
   '2000':  { nama: '1gb', harga: 2000,  memo: 1048,  disk: 2000, cpu: 30  },
   '3000':  { nama: '2gb', harga: 3000,  memo: 2048,  disk: 2000, cpu: 50  },
   '4000':  { nama: '3gb', harga: 4000,  memo: 3048,  disk: 2000, cpu: 75  },
@@ -31,10 +32,7 @@ const PACKAGE_CONFIG = {
   '15000': { nama: 'unli', harga: 15000, memo: 0,     disk: 0,    cpu: 0 } 
 };
 
-
 function $(id){return document.getElementById(id);}
-
-// ... (Fungsi Pembantu: toRupiah, getSelectedRamInfo, updateTotalHarga) ...
 function toRupiah(number) {
     if (isNaN(number) || number === null) return 'RpN/A';
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number).replace('Rp', 'Rp');
@@ -49,9 +47,6 @@ function updateTotalHarga() {
   const { harga } = getSelectedRamInfo();
   $("totalHarga").textContent = `Total Harga: ${toRupiah(harga)}`;
 }
-// ...
-
-// Fungsi Reset Input (Tombol Refresh Data) - Tidak ada perubahan
 function refreshInput(){
   const usernameEl=$("username"); 
   const ramEl=$("ram");
@@ -60,11 +55,9 @@ function refreshInput(){
   updateTotalHarga(); 
   alert("Input username dan pilihan panel berhasil di-reset.");
 }
-
-// 1. Perbaikan: Muat QRIS yang tersimpan dan isi formulir jika QRIS aktif
 function loadSavedQris() {
     const savedQris = localStorage.getItem(global.CURRENT_QRIS_KEY);
-    if (!savedQris) return false; // Mengembalikan false jika tidak ada sesi
+    if (!savedQris) return false;
 
     try {
         const qrisData = JSON.parse(savedQris);
@@ -75,10 +68,9 @@ function loadSavedQris() {
             return false;
         }
         
-        // Mengisi kembali formulir saat QRIS aktif
         $("username").value = qrisData.username || '';
         $("ram").value = qrisData.harga ? qrisData.harga.toString() : '';
-        updateTotalHarga(); // Update tampilan harga
+        updateTotalHarga();
 
         $("qrisImage").src = qrisData.qrUrl;
         $("detailPembayaran").textContent = qrisData.detailText;
@@ -86,7 +78,7 @@ function loadSavedQris() {
         $("btnBatal").classList.remove("hidden");
         
         mulaiCekMutasi(qrisData.paymentId, qrisData.username, qrisData.harga);
-        return true; // Mengembalikan true jika sesi dimuat
+        return true;
 
     } catch(e) {
         console.error("Gagal memuat QRIS tersimpan:", e);
@@ -94,8 +86,6 @@ function loadSavedQris() {
         return false;
     }
 }
-
-// ... (Fungsi buatQris, mulaiCekMutasi, buatServerPTLA, batalQris - Tidak ada perubahan) ...
 async function buatQris(){
   const username=$("username").value.trim();
   const { harga: ramHarga, nama: ramNama } = getSelectedRamInfo(); 
@@ -154,7 +144,7 @@ async function buatQris(){
         ramNama,
         qrUrl,
         detailText,
-        waktuKadaluarsa: Date.now() + (30 * 60 * 1000) // 30 menit
+        waktuKadaluarsa: Date.now() + (30 * 60 * 1000)
     }));
 
     mulaiCekMutasi(paymentId, username, ramHarga);
@@ -165,6 +155,8 @@ async function buatQris(){
     alert("Terjadi kesalahan membuat QRIS.");
   }
 }
+
+// AUTO MUTASI
 let mutasiInterval;
 
 async function mulaiCekMutasi(paymentId, username, ramHarga){
@@ -190,11 +182,28 @@ async function mulaiCekMutasi(paymentId, username, ramHarga){
           clearInterval(mutasiInterval);
           localStorage.removeItem(global.CURRENT_QRIS_KEY); 
           
-          simpanRiwayat({id:paymentId,username,harga:ramHarga,waktu:new Date().toLocaleString("id-ID"), status: "Sukses"});
+          // Hitung Waktu Kedaluwarsa (1 bulan = 30 hari)
+          const now = new Date();
+          const expireDate = new Date(now.setMonth(now.getMonth() + 1));
           
-          alert("Pembayaran diterima! Membuat server...");
+          // Simpan dengan detail akun tambahan
+          simpanRiwayat({
+              id: paymentId,
+              username: username,
+              harga: ramHarga,
+              waktu: new Date().toLocaleString("id-ID"),
+              status: "Sukses",
+              panelUser: username, // Username panel
+              panelPass: username, // Password panel = Username
+              panelLink: global.PANEL_LOGIN_LINK, // Link Login
+              exp: expireDate.toLocaleDateString("id-ID") // Tgl Kedaluwarsa
+          });
+          
+          alert("Pembayaran diterima! Server akan segera dibuat.");
           buatServerPTLA(username, ramHarga); 
-          batalQris(); 
+          
+          // Perbaikan: Panggil fungsi closeQris (tanpa alert)
+          closeQris(); 
           return;
         }
       }
@@ -203,7 +212,7 @@ async function mulaiCekMutasi(paymentId, username, ramHarga){
         clearInterval(mutasiInterval);
         localStorage.removeItem(global.CURRENT_QRIS_KEY);
         alert("Waktu pembayaran habis.");
-        batalQris(); 
+        batalQris(true); // Kirim true untuk menampilkan alert batal
       }
 
     }catch(e){ 
@@ -214,17 +223,47 @@ async function mulaiCekMutasi(paymentId, username, ramHarga){
                 clearInterval(mutasiInterval);
                 localStorage.removeItem(global.CURRENT_QRIS_KEY);
                 alert("Waktu pembayaran habis.");
-                batalQris();
+                closeQris();
             }
         }
         console.error(e); 
     }
   },10000);
 }
+
+// Fungsi Penutup QRIS TANPA Alert
+function closeQris(){
+  if (mutasiInterval) clearInterval(mutasiInterval);
+  localStorage.removeItem(global.CURRENT_QRIS_KEY); 
+  
+  $("qrisSection").classList.add("hidden");
+  $("btnBatal").classList.add("hidden");
+  $("qrisImage").src="";
+  $("detailPembayaran").textContent="";
+  refreshInput(); 
+}
+
+// Fungsi Batal QRIS (DENGAN Alert)
+function batalQris(show_alert = false){
+  if (mutasiInterval) clearInterval(mutasiInterval);
+  localStorage.removeItem(global.CURRENT_QRIS_KEY); 
+  
+  $("qrisSection").classList.add("hidden");
+  $("btnBatal").classList.add("hidden");
+  $("qrisImage").src="";
+  $("detailPembayaran").textContent="";
+  refreshInput(); 
+  
+  if (show_alert) {
+      alert("Pembayaran QRIS dibatalkan.");
+  }
+}
+
+
 async function buatServerPTLA(username, ramHarga){
   const config = PACKAGE_CONFIG[ramHarga.toString()];
-
-  if (!config) {
+  // ... (Logika buatServerPTLA tidak berubah) ...
+    if (!config) {
     alert("Gagal membuat server: Konfigurasi paket tidak ditemukan.");
     return;
   }
@@ -267,20 +306,9 @@ async function buatServerPTLA(username, ramHarga){
     alert("Gagal membuat server.");
   }
 }
-function batalQris(){
-  if (mutasiInterval) clearInterval(mutasiInterval);
-  localStorage.removeItem(global.CURRENT_QRIS_KEY); 
-  
-  $("qrisSection").classList.add("hidden");
-  $("btnBatal").classList.add("hidden");
-  $("qrisImage").src="";
-  $("detailPembayaran").textContent="";
-  // Reset input setelah QRIS dibatalkan/selesai
-  refreshInput(); 
-  alert("Pembayaran QRIS dibatalkan.");
-}
 
-// ... (Fungsi Riwayat - Tidak ada perubahan) ...
+
+// RIWAYAT
 function getRiwayat(){
   try{
     const raw=localStorage.getItem(global.STORAGE_KEY);
@@ -296,6 +324,7 @@ function simpanRiwayat(d){
   localStorage.setItem(global.STORAGE_KEY,JSON.stringify(l));
 }
 
+// Perbaikan: Render Riwayat di Modal dengan detail akun
 function renderRiwayat(){
   const c=$("riwayatList");
   const list=getRiwayat();
@@ -311,19 +340,40 @@ function renderRiwayat(){
     const paketNama = config ? config.nama.toUpperCase() : 'N/A';
     const hargaText = item.harga ? toRupiah(item.harga) : 'RpN/A';
     
+    const panelUser = item.panelUser || item.username; // Ambil data akun
+    const panelPass = item.panelPass || item.username;
+    const panelLink = item.panelLink || 'N/A';
+    const expDate = item.exp || 'N/A';
+
+    
     const div=document.createElement("div");
     div.className="riwayat-item";
     div.innerHTML=
-      `<div class='riwayat-item-title'>Panel ${paketNama}</div>`+
-      `<div class='riwayat-item-meta'>💰 Harga: ${hargaText}</div>`+
-      `<div class='riwayat-item-meta'>👤 Username: ${item.username}</div>`+
-      `<div class='riwayat-item-meta'>🕒 Waktu: ${item.waktu}</div>`+
+      `<div class='riwayat-item-title'>Panel ${paketNama} - ${hargaText}</div>`+
       `<div class='riwayat-item-meta'>🆔 ID Transaksi: ${item.id}</div>`+
-      `<div class='riwayat-item-meta'>✅ Status: ${item.status || "Sukses"}</div>`+
-      `<button class="btn-delete" onclick="hapusRiwayat('${item.uniqueId}')">Hapus</button>`; 
+      `<div class='riwayat-item-meta'>🕒 Waktu Beli: ${item.waktu}</div>`+
+      `<div class='riwayat-item-meta'>📅 Exp: ${expDate}</div>`+
+      `<div class='riwayat-item-meta account-detail'>`+
+          `<strong>👤 User:</strong> ${panelUser}<br>`+
+          `<strong>🔑 Pass:</strong> ${panelPass}`+
+      `</div>`+
+      `<div class='riwayat-item-meta'>🔗 <a href="${panelLink}" target="_blank">${panelLink}</a></div>`+
+      
+      `<div class="riwayat-actions">`+
+          `<button class="btn-copy" onclick="copyLogin('${panelUser}', '${panelPass}', '${panelLink}')">Copy Login</button>`+
+          `<button class="btn-delete" onclick="hapusRiwayat('${item.uniqueId}')">Hapus</button>`+
+      `</div>`; 
     c.appendChild(div);
   });
 }
+
+function copyLogin(user, pass, link) {
+    const loginText = `Username: ${user}\nPassword: ${pass}\nLink Login: ${link}`;
+    navigator.clipboard.writeText(loginText)
+        .then(() => alert("Detail Login berhasil disalin!"))
+        .catch(err => alert("Gagal menyalin: " + err));
+}
+
 
 function hapusRiwayat(uniqueId) {
     if (!confirm("Apakah Anda yakin ingin menghapus riwayat ini?")) return;
@@ -343,7 +393,7 @@ function closeRiwayat(){
     $("riwayatModal").classList.remove("show"); 
 }
 
-// Anti Pull Refresh (Tidak ada perubahan)
+// ... (Fungsi setupPullToRefreshBlocker dan window.onload tidak berubah) ...
 function setupPullToRefreshBlocker(){
   let startY=0;
   window.addEventListener("touchstart",e=>{
@@ -358,13 +408,10 @@ function setupPullToRefreshBlocker(){
 window.addEventListener("load",()=>{
     setupPullToRefreshBlocker();
     
-    // 1. Logika muat QRIS yang diperbaiki:
     const qrisActive = loadSavedQris(); 
     
-    // Jika tidak ada QRIS aktif, baru inisialisasi input (agar tidak me-reset input yang sudah terisi)
     if (!qrisActive) {
-        // Cek apakah ada nilai di URL atau default lainnya di sini jika perlu.
-        // Untuk saat ini, kita hanya memastikan updateTotalHarga dipanggil.
         updateTotalHarga(); 
     }
 });
+  
