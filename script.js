@@ -1,7 +1,7 @@
 // GLOBAL CONFIG (Tidak diubah dari jawaban terakhir, hanya memastikan kelengkapan)
 const global = {
-  domain: "https://mikudevprivate.pteropanelku.biz.id",
-  apikey: "ptla_7gss1IvRmWISvixYyZ4fEQgPD6wLvakmAeZMyoT9HFQ",
+  domain: "https://panel.xiao-store.web.id",
+  apikey: "ptla_ll4q9Ks59PRs0ZviiEa3e5g9x3fbTPPh909arpx9gG1",
   nestid: "5",
   egg: "15",
   loc: "1",
@@ -17,6 +17,7 @@ const global = {
 
 // PACKAGE CONFIG (Tidak diubah dari jawaban terakhir, hanya memastikan kelengkapan)
 const PACKAGE_CONFIG = {
+  '500':  { nama: '500mb', harga: 500,  memo: 500,  disk: 100, cpu: 30  },
   '2000':  { nama: '1gb', harga: 2000,  memo: 1048,  disk: 2000, cpu: 30  },
   '3000':  { nama: '2gb', harga: 3000,  memo: 2048,  disk: 2000, cpu: 50  },
   '4000':  { nama: '3gb', harga: 4000,  memo: 3048,  disk: 2000, cpu: 75  },
