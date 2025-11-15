@@ -19,6 +19,7 @@ const global = {
 
 // PACKAGE CONFIG (Tidak diubah dari jawaban terakhir)
 const PACKAGE_CONFIG = {
+  '1':  { nama: '500mb', harga: 2000,  memo: 1048,  disk: 2000, cpu: 30  },
   '2000':  { nama: '1gb', harga: 2000,  memo: 1048,  disk: 2000, cpu: 30  },
   '3000':  { nama: '2gb', harga: 3000,  memo: 2048,  disk: 2000, cpu: 50  },
   '4000':  { nama: '3gb', harga: 4000,  memo: 3048,  disk: 2000, cpu: 75  },
