@@ -4,10 +4,10 @@ function $(id) {
 
 // Reset hanya input username & RAM
 function resetForm() {
-  const username = $("username");
-  const ram = $("ram");
-  if (username) username.value = "";
-  if (ram) ram.selectedIndex = 0;
+  const usernameEl = $("username");
+  const ramEl = $("ram");
+  if (usernameEl) usernameEl.value = "";
+  if (ramEl) ramEl.selectedIndex = 0;
 }
 
 // Simulasi pembuatan QRIS + simpan riwayat
@@ -31,7 +31,7 @@ function buatQris() {
   setTimeout(() => {
     loadingText.classList.add("hidden");
 
-    // tampilkan section QRIS
+    // tampilkan section QRIS & tombol batal
     qrisSection.classList.remove("hidden");
     btnBatal.classList.remove("hidden");
 
@@ -44,23 +44,23 @@ function buatQris() {
       "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" +
       payload;
 
-    // detail pembayaran sederhana
+    // buat data transaksi
     const data = {
       id: Math.random().toString(36).substring(2),
       username: username,
-      ram: ram,
+      paket: ram,
       waktu: new Date().toLocaleString("id-ID"),
     };
+
     $("detailPembayaran").textContent =
       "INFORMASI PEMBAYARAN\n" +
       `ID        : ${data.id}\n` +
       `Username  : ${data.username}\n` +
-      `RAM       : ${data.ram}\n` +
+      `Paket     : ${data.paket}\n` +
       `Waktu     : ${data.waktu}`;
 
     // simpan ke riwayat di localStorage perangkat ini
     simpanRiwayat(data);
-    tampilRiwayat();
   }, 1200);
 }
 
@@ -99,31 +99,57 @@ function simpanRiwayat(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 }
 
-function tampilRiwayat() {
+// Render riwayat ke modal
+function renderRiwayat() {
   const container = $("riwayatList");
   const list = getRiwayat();
 
   if (!list.length) {
     container.innerHTML =
-      '<p class="riwayat-list-empty">Belum ada transaksi di perangkat ini.</p>';
+      '<p class="riwayat-empty">Belum ada transaksi di perangkat ini.</p>';
     return;
   }
 
   // urutkan terbaru di atas
   list.sort((a, b) => {
-    return (new Date(b.waktu)).getTime() - (new Date(a.waktu)).getTime();
+    return new Date(b.waktu).getTime() - new Date(a.waktu).getTime();
   });
 
   container.innerHTML = "";
-  list.forEach((item) => {
+  list.forEach((item, idx) => {
     const div = document.createElement("div");
     div.className = "riwayat-item";
+
+    const paketLabel =
+      item.paket === "1gb"
+        ? "1 GB"
+        : item.paket === "2gb"
+        ? "2 GB"
+        : item.paket === "3gb"
+        ? "3 GB"
+        : item.paket === "4gb"
+        ? "4 GB"
+        : item.paket;
+
     div.innerHTML =
-      `<div><strong>${item.username}</strong> • ${item.ram}</div>` +
-      `<div>${item.waktu}</div>` +
-      `<div>ID: ${item.id}</div>`;
+      `<div class="riwayat-item-title">Panel ${paketLabel}</div>` +
+      `<div class="riwayat-item-meta">👤 ${item.username}</div>` +
+      `<div class="riwayat-item-meta">🕒 ${item.waktu}</div>` +
+      `<div class="riwayat-item-meta">🆔 ${item.id}</div>`;
     container.appendChild(div);
   });
+}
+
+// ===== MODAL CONTROL =====
+function openRiwayat() {
+  renderRiwayat();
+  const modal = $("riwayatModal");
+  modal.classList.add("show");
+}
+
+function closeRiwayat() {
+  const modal = $("riwayatModal");
+  modal.classList.remove("show");
 }
 
 // ===== MENCEGAH PULL-TO-REFRESH DI MOBILE =====
@@ -156,6 +182,5 @@ function setupPullToRefreshBlocker() {
 
 // INIT
 window.addEventListener("load", () => {
-  tampilRiwayat();
   setupPullToRefreshBlocker();
 });
