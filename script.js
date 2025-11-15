@@ -17,6 +17,19 @@ const global = {
   STORAGE_KEY: "riwayat_transaksi_panel",
 };
 
+// 1. STRUKTUR DATA HARGA DAN SPESIFIKASI PANEL BARU
+const PACKAGE_CONFIG = {
+  // Key harus sesuai dengan nilai 'value' di HTML option
+  '1gb': { nama: '1gb', harga: 10000, memo: 1048, disk: 2000, cpu: 30 },
+  '2gb': { nama: '2gb', harga: 20000, memo: 2048, disk: 4000, cpu: 50 },
+  '3gb': { nama: '3gb', harga: 30000, memo: 3048, disk: 6000, cpu: 75 },
+  '4g ': { nama: '4gb', harga: 40000, memo: 4048, disk: 8000, cpu: 100 },
+  // Tambahkan paket lain yang ingin Anda dukung di HTML
+  // '50000': { nama: '5gb', harga: 50000, memo: 5048, disk: 2000, cpu: 130 },
+  // ...
+};
+
+
 function $(id){return document.getElementById(id);}
 
 // Fungsi Pembantu
@@ -27,28 +40,31 @@ function getSelectedRamInfo() {
   const selectEl = $("ram");
   const selectedOption = selectEl.options[selectEl.selectedIndex];
   const harga = selectedOption.value ? parseInt(selectedOption.value) : 0;
-  const namaPaket = selectedOption.getAttribute("data-ram") || 'N/A';
   
-  return { harga, namaPaket };
+  // Cari info paket dari PACKAGE_CONFIG berdasarkan harga (value di option)
+  const config = PACKAGE_CONFIG[harga.toString()]; 
+  
+  // Mengembalikan data lengkap atau default jika tidak ditemukan
+  return config || { nama: 'N/A', harga: 0, memo: 0, disk: 0, cpu: 0 };
 }
 
-// 1. Deteksi Harga Otomatis & Update Display
+// Deteksi Harga Otomatis & Update Display
 function updateTotalHarga() {
   const { harga } = getSelectedRamInfo();
   $("totalHarga").textContent = `Total Harga: ${toRupiah(harga)}`;
 }
 
-// 2. Fungsi Reset Input (Tombol Refresh Data)
+// Fungsi Reset Input (Tombol Refresh Data)
 function refreshInput(){
   const usernameEl=$("username"); 
   const ramEl=$("ram");
   if(usernameEl) usernameEl.value="";
   if(ramEl) ramEl.selectedIndex=0;
-  updateTotalHarga(); // Reset harga display
+  updateTotalHarga(); 
   alert("Input username dan pilihan panel berhasil di-reset.");
 }
 
-// Panggil saat halaman dimuat
+// Dipanggil saat halaman dimuat
 function loadSavedQris() {
     const savedQris = localStorage.getItem(global.CURRENT_QRIS_KEY);
     if (!savedQris) return;
@@ -56,8 +72,8 @@ function loadSavedQris() {
     try {
         const qrisData = JSON.parse(savedQris);
         const now = Date.now();
-        // Asumsi QRIS berlaku 30 menit (1800000 ms).
-        // Sesuaikan jika masa berlaku QRIS Anda berbeda.
+        
+        // Cek kadaluarsa
         if (qrisData.waktuKadaluarsa && qrisData.waktuKadaluarsa < now) {
             localStorage.removeItem(global.CURRENT_QRIS_KEY);
             return;
@@ -69,6 +85,7 @@ function loadSavedQris() {
         $("btnBatal").classList.remove("hidden");
         
         // Lanjutkan pengecekan mutasi
+        // Menggunakan qrisData.harga sebagai amount/ramHarga
         mulaiCekMutasi(qrisData.paymentId, qrisData.username, qrisData.harga);
 
     } catch(e) {
@@ -80,7 +97,7 @@ function loadSavedQris() {
 // QRIS REAL
 async function buatQris(){
   const username=$("username").value.trim();
-  const { harga: ramHarga, namaPaket: ramNama } = getSelectedRamInfo();
+  const { harga: ramHarga, nama: ramNama } = getSelectedRamInfo(); // Mengambil nama dan harga
   const ramValue = ramHarga;
 
   if(!username){ alert("Username tidak boleh kosong."); return; }
@@ -93,7 +110,6 @@ async function buatQris(){
   loadingText.classList.remove("hidden");
 
   try{
-    // Cek apakah ada sesi QRIS yang sedang berjalan
     if (localStorage.getItem(global.CURRENT_QRIS_KEY)) {
         alert("Selesaikan atau batalkan pembayaran QRIS yang sedang berjalan terlebih dahulu.");
         loadingText.classList.add("hidden");
@@ -126,12 +142,12 @@ async function buatQris(){
       "INFORMASI PEMBAYARAN\n"+
       `ID        : ${paymentId}\n`+
       `Username  : ${username}\n`+
-      `Paket     : ${ramNama} (${toRupiah(ramHarga)})\n`+ // Tampilkan nama paket & harga
+      `Paket     : ${ramNama} (${toRupiah(ramHarga)})\n`+ 
       `Waktu     : ${waktu}`;
       
     $("detailPembayaran").textContent = detailText;
 
-    // 3. Simpan status QRIS ke Local Storage (untuk menghindari hapus data saat refresh)
+    // Simpan status QRIS ke Local Storage
     localStorage.setItem(global.CURRENT_QRIS_KEY, JSON.stringify({
         paymentId,
         username,
@@ -157,7 +173,6 @@ let mutasiInterval;
 async function mulaiCekMutasi(paymentId, username, ramHarga){
   let counter=0; const maxCheck=60;
 
-  // Pastikan interval sebelumnya dibersihkan
   if (mutasiInterval) clearInterval(mutasiInterval);
 
   mutasiInterval = setInterval(async()=>{
@@ -170,18 +185,21 @@ async function mulaiCekMutasi(paymentId, username, ramHarga){
 
       if(data.result){
         const found=data.result.find(tx=>{
-          // Menggunakan ramHarga (total harga) untuk pengecekan nominal
           const nominal=parseInt(tx.kredit.replace(/\./g,"")); 
           return tx.status==="IN" && nominal==ramHarga;
         });
 
         if(found){
           clearInterval(mutasiInterval);
-          localStorage.removeItem(global.CURRENT_QRIS_KEY); // Hapus sesi QRIS
-          simpanRiwayat({id:paymentId,username,paket:ramHarga,waktu:new Date().toLocaleString("id-ID"), status: "Sukses"});
+          localStorage.removeItem(global.CURRENT_QRIS_KEY); 
+          
+          // Simpan dengan status Sukses
+          simpanRiwayat({id:paymentId,username,harga:ramHarga,waktu:new Date().toLocaleString("id-ID"), status: "Sukses"});
+          
           alert("Pembayaran diterima! Membuat server...");
-          buatServerPTLA(username,ramHarga);
-          batalQris(); // Sembunyikan QRIS setelah sukses
+          // Panggil buatServerPTLA dengan harga/paket yang sudah terdeteksi
+          buatServerPTLA(username, ramHarga); 
+          batalQris(); 
           return;
         }
       }
@@ -190,18 +208,17 @@ async function mulaiCekMutasi(paymentId, username, ramHarga){
         clearInterval(mutasiInterval);
         localStorage.removeItem(global.CURRENT_QRIS_KEY);
         alert("Waktu pembayaran habis.");
-        batalQris(); // Sembunyikan QRIS setelah waktu habis
+        batalQris(); 
       }
 
     }catch(e){ 
-        // Lakukan pengecekan waktu habis jika ada error API
         const savedQris = localStorage.getItem(global.CURRENT_QRIS_KEY);
         if (savedQris) {
             const qrisData = JSON.parse(savedQris);
             if (qrisData.waktuKadaluarsa && qrisData.waktuKadaluarsa < Date.now()) {
                 clearInterval(mutasiInterval);
                 localStorage.removeItem(global.CURRENT_QRIS_KEY);
-                alert("Waktu pembayaran habis (dideteksi setelah error API).");
+                alert("Waktu pembayaran habis.");
                 batalQris();
             }
         }
@@ -210,15 +227,24 @@ async function mulaiCekMutasi(paymentId, username, ramHarga){
   },10000);
 }
 
-// PTLA CREATE SERVER (Tidak ada perubahan di sini)
-async function buatServerPTLA(username,ram){
+// 2. PTLA CREATE SERVER DENGAN LOGIKA SPESIFIKASI BARU
+async function buatServerPTLA(username, ramHarga){
+  // Ambil konfigurasi paket berdasarkan harga yang dibayarkan
+  const config = PACKAGE_CONFIG[ramHarga.toString()];
+
+  if (!config) {
+    alert("Gagal membuat server: Konfigurasi paket tidak ditemukan.");
+    return;
+  }
+  
   try{
     const payload={
-      server_name:username,
-      ram:ram*1000,
-      disk:2000,
-      cpu:100,
-      user:username
+      server_name: username,
+      // Menggunakan nilai dari PACKAGE_CONFIG
+      ram: config.memo,     // Memory (RAM) dalam MB
+      disk: config.disk,    // Disk dalam MB (diasumsikan 2000MB/2GB)
+      cpu: config.cpu,      // CPU dalam %
+      user: username
     };
 
     const res=await fetch(`${global.domain}/api/create`,{
@@ -232,11 +258,11 @@ async function buatServerPTLA(username,ram){
 
     const data=await res.json();
     if(!data.success){
-      alert("Pembayaran sukses, tetapi gagal membuat server.");
+      alert("Pembayaran sukses, tetapi gagal membuat server. Pesan: " + (data.message || "Kesalahan API"));
       return;
     }
 
-    alert("Server berhasil dibuat!");
+    alert("Server berhasil dibuat! ID Server: " + (data.server_id || "N/A"));
 
   }catch(e){
     console.error(e);
@@ -245,9 +271,7 @@ async function buatServerPTLA(username,ram){
 }
 
 function batalQris(){
-  // Hentikan pengecekan mutasi
   if (mutasiInterval) clearInterval(mutasiInterval);
-  // Hapus dari local storage
   localStorage.removeItem(global.CURRENT_QRIS_KEY); 
   
   $("qrisSection").classList.add("hidden");
@@ -264,53 +288,58 @@ function getRiwayat(){
     const raw=localStorage.getItem(global.STORAGE_KEY);
     if(!raw) return [];
     const p=JSON.parse(raw);
-    return Array.isArray(p)?p:[];
+    // Tambahkan 'id' jika belum ada untuk memastikan setiap item bisa dihapus
+    return Array.isArray(p) ? p.map(item => ({...item, uniqueId: item.uniqueId || Math.random().toString(36).substring(2) + Date.now()})) : [];
   }catch{return [];}
 }
 
 function simpanRiwayat(d){
   const l=getRiwayat(); 
-  l.push(d);
+  l.push({...d, uniqueId: Math.random().toString(36).substring(2) + Date.now()}); // Tambahkan ID unik
   localStorage.setItem(global.STORAGE_KEY,JSON.stringify(l));
 }
 
-// 5. Render Riwayat di Modal (Popup)
+// 4. Render Riwayat di Modal (Popup) - Hanya Sukses
 function renderRiwayat(){
   const c=$("riwayatList");
   const list=getRiwayat();
-  if(!list.length){
-    c.innerHTML='<p class="riwayat-empty">Belum ada transaksi yang sukses.</p>'; return;
+  // Filter hanya yang statusnya "Sukses"
+  const successList = list.filter(item => item.status === "Sukses");
+
+  if(!successList.length){
+    c.innerHTML='<p class="riwayat-empty">Belum ada transaksi yang berhasil.</p>'; return;
   }
   c.innerHTML="";
-  list.sort((a,b)=>new Date(b.waktu)-new Date(a.waktu));
-  list.forEach(item=>{
+  successList.sort((a,b)=>new Date(b.waktu)-new Date(a.waktu));
+  successList.forEach(item=>{
     const div=document.createElement("div");
     div.className="riwayat-item";
     
-    // Tampilkan Harga dalam format Rupiah
-    const paketText = item.paket ? `${toRupiah(item.paket)}` : 'N/A'; 
-    const ramName = getRamNameByValue(item.paket);
+    const config = PACKAGE_CONFIG[item.harga.toString()];
+    const paketNama = config ? config.nama.toUpperCase() : 'N/A';
+    const hargaText = item.harga ? toRupiah(item.harga) : 'RpN/A';
     
     div.innerHTML=
-      `<div class='riwayat-item-title'>Panel ${ramName}</div>`+
-      `<div class='riwayat-item-meta'>💰 Harga: ${paketText}</div>`+
+      `<div class='riwayat-item-title'>Panel ${paketNama}</div>`+
+      `<div class='riwayat-item-meta'>💰 Harga: ${hargaText}</div>`+
       `<div class='riwayat-item-meta'>👤 Username: ${item.username}</div>`+
       `<div class='riwayat-item-meta'>🕒 Waktu: ${item.waktu}</div>`+
       `<div class='riwayat-item-meta'>🆔 ID Transaksi: ${item.id}</div>`+
-      `<div class='riwayat-item-meta'>✅ Status: ${item.status || "Sukses"}</div>`;
+      `<div class='riwayat-item-meta'>✅ Status: ${item.status || "Sukses"}</div>`+
+      // 3. Tambah tombol hapus
+      `<button class="btn-delete" onclick="hapusRiwayat('${item.uniqueId}')">Hapus</button>`; 
     c.appendChild(div);
   });
 }
 
-// Fungsi bantu untuk mendapatkan nama RAM dari harganya
-function getRamNameByValue(value) {
-    switch(value) {
-        case 10000: return "1 GB";
-        case 20000: return "2 GB";
-        case 30000: return "3 GB";
-        case 40000: return "4 GB";
-        default: return "N/A";
-    }
+// 3. Fungsi Hapus Riwayat
+function hapusRiwayat(uniqueId) {
+    if (!confirm("Apakah Anda yakin ingin menghapus riwayat ini?")) return;
+
+    const list = getRiwayat().filter(item => item.uniqueId !== uniqueId);
+    localStorage.setItem(global.STORAGE_KEY, JSON.stringify(list));
+    
+    renderRiwayat(); // Perbarui tampilan modal
 }
 
 
@@ -339,4 +368,3 @@ window.addEventListener("load",()=>{
     updateTotalHarga(); // Inisialisasi display harga
     loadSavedQris();    // Cek status QRIS saat refresh
 });
-                                    
