@@ -70,24 +70,14 @@
         </div>
 
         <p id="loadingText" class="loading hidden">Membuat QRIS...</p>
-
-        <button
-          class="btn btn-outline full-width"
-          type="button"
-          onclick="openRiwayat()"
-        >
-          Riwayat Pembelian
-        </button>
       </section>
 
       <!-- QRIS PEMBAYARAN -->
-      <section id="qrisSection" class="card card-neon hidden">
+      <section id="qrisSection" class="card hidden">
         <h2 class="card-title">QRIS Pembayaran</h2>
         <p class="card-desc">
           Scan QRIS berikut lalu selesaikan pembayaran sebelum waktu habis.
         </p>
-
-        <div class="store-badge">Store Neon Panel</div>
 
         <div class="qr-wrapper">
           <img id="qrisImage" src="" alt="QRIS" />
@@ -95,21 +85,17 @@
 
         <pre id="detailPembayaran" class="detail-text"></pre>
       </section>
-    </main>
-  </div>
 
-  <!-- MODAL RIWAYAT -->
-  <div id="riwayatModal" class="modal">
-    <div class="modal-overlay" onclick="closeRiwayat()"></div>
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Riwayat Pembelian</h3>
-        <button class="modal-close" type="button" onclick="closeRiwayat()">✕</button>
-      </div>
-      <div id="riwayatList" class="modal-body">
-        <!-- item riwayat di-render dari JS -->
-      </div>
-    </div>
+      <!-- RIWAYAT TRANSAKSI -->
+      <section class="card">
+        <h2 class="card-title">Riwayat Transaksi</h2>
+        <p class="card-desc">
+          Hanya tersimpan di perangkat ini. Gunakan riwayat jika data pembayaran
+          yang kamu simpan hilang.
+        </p>
+        <div id="riwayatList" class="riwayat-list"></div>
+      </section>
+    </main>
   </div>
 
   <script src="script.js"></script>
