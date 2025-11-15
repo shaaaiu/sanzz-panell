@@ -42,13 +42,20 @@
         <div class="form-group">
           <label for="ram">Pilih Paket RAM</label>
           <select id="ram" onchange="updateTotalHarga()">
-            <option value="" disabled selected>Pilih paket...</option>
-            <option value="1gb">1 GB - Rp2.000</option>
-            <option value="2gb">2 GB - Rp3.000</option>
-            <option value="3gb">3 GB - Rp4.000</option>
-            <option value="4gb">4 GB - Rp5.000</option>
-            </select>
-          </div>
+            <option value="">Pilih paket...</option>
+            <option value="2000">1 GB - Rp2.000</option>
+            <option value="3000">2 GB - Rp3.000</option>
+            <option value="4000">3 GB - Rp4.000</option>
+            <option value="5000">4 GB - Rp5.000</option>
+            <option value="6000">5 GB - Rp6.000</option>
+            <option value="7000">6 GB - Rp7.000</option>
+            <option value="8000">7 GB - Rp8.000</option>
+            <option value="9000">8 GB - Rp9.000</option>
+            <option value="10000">9 GB - Rp10.000</option>
+            <option value="12000">10 GB - Rp12.000</option>
+            <option value="15000">UNLI - Rp15.000</option>
+          </select>
+        </div>
         
         <p id="totalHarga" class="total-harga">Total Harga: Rp0</p>
         <div class="buttons-row">
@@ -96,7 +103,7 @@
         </section>
     </main>
   </div>
-
+  
   <div id="riwayatModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
