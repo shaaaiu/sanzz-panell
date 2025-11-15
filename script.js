@@ -1,15 +1,16 @@
-// GLOBAL CONFIG 
+// GLOBAL CONFIG (MOHON GANTI NILAI DENGAN API KEY DAN TOKEN ANDA YANG BENAR)
 const global = {
   domain: "https://mikudevprivate.pteropanelku.biz.id",
-  apikey: "ptla_7gss1IvRmWISvixYyZ4fEQgPD6wLvakmAeZMyoT9HFQ",
+  apikey: "ptla_7gss1IvRmWISvixYyZ4fEQgPD6wLvakmAeZMyoT9HFQ", // API PTERODACTYL
   nestid: "5",
   egg: "15",
   loc: "1",
-  qrisOrderKuota: "00020101021126670016COM.NOBUBANK.WWW011893600...5919STOK RESS OK21423066007CILEGON61054241162070703A016304F736",
-  apiSimpelBot: "new2025",
-  apikeyorkut: "https://simpelz.fahriofficial.my.id",
-  merchantIdOrderKuota: "OK2142306",
-  apiOrderKuota: "700336617360840832142306OKCT7A1A4292BE20CEF492B467C5B6EAC103",
+  
+  // --- KONFIGURASI UNTUK API QRIS BARU (https://apii.ryuuxiao.biz.id) ---
+  qrisBaseUrl: "https://apii.ryuuxiao.biz.id", // Base URL API Baru
+  qrisApiToken: "RyuuXiao", // Ganti dengan Apikey yang benar untuk API Baru
+  qrisUsername: "adjie22", // Ganti dengan Username yang benar untuk API Baru
+  qrisOrderToken: "1451589:fsoScMnGEp6kjIQav2L7l0ZWgd1NXVer", // Ganti dengan Token yang benar untuk API Baru
 };
 
 function $(id){return document.getElementById(id);}
@@ -34,13 +35,16 @@ async function buatQris(){
   loadingText.classList.remove("hidden");
 
   try{
-    const url=`${global.apikeyorkut}/orderkuota/createpayment?apikey=${global.apikey}&username=${global.apiOrderKuota}&token=${global.qrisOrderKuota}&amount=${ram}`;
+    // === URL API QRIS BARU ===
+    const url=`${global.qrisBaseUrl}/orderkuota/createpayment?apikey=${global.qrisApiToken}&username=${global.qrisUsername}&token=${global.qrisOrderToken}&amount=${ram}`;
     const res=await fetch(url);
     const data=await res.json();
+    // ========================
 
     loadingText.classList.add("hidden");
 
     if(!data.status || !data.result || !data.result.imageqris){
+      console.error("Gagal membuat QRIS. Respons API:", data);
       alert("Gagal membuat QRIS."); return;
     }
 
@@ -79,9 +83,11 @@ async function mulaiCekMutasi(paymentId,username,ram){
     counter++;
 
     try{
-      const url=`${global.apikeyorkut}/orderkuota/mutasiqr?apikey=${global.apikey}&username=${global.apiOrderKuota}&token=${global.qrisOrderKuota}`;
+      // === URL MUTASI API QRIS BARU ===
+      const url=`${global.qrisBaseUrl}/orderkuota/mutasiqr?apikey=${global.qrisApiToken}&username=${global.qrisUsername}&token=${global.qrisOrderToken}`;
       const res=await fetch(url);
       const data=await res.json();
+      // ==============================
 
       if(data.result){
         const found=data.result.find(tx=>{
