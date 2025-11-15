@@ -1,4 +1,4 @@
-// GLOBAL CONFIG (Pastikan nilai-nilai ini sudah benar)
+// GLOBAL CONFIG (DENGAN NILAI BARU DARI PENGGUNA)
 const global = {
   domain: "https://mikudevprivate.pteropanelku.biz.id",
   apikey: "ptla_7gss1IvRmWISvixYyZ4fEQgPD6wLvakmAeZMyoT9HFQ", // API PTERODACTYL
@@ -8,25 +8,29 @@ const global = {
   
   // --- KONFIGURASI UNTUK API QRIS BARU (https://apii.ryuuxiao.biz.id) ---
   qrisBaseUrl: "https://apii.ryuuxiao.biz.id", 
-  qrisApiToken: "RyuuXiao", 
-  qrisUsername: "adjie22", 
-  qrisOrderToken: "1451589:fsoScMnGEp6kjIQav2L7l0ZWgd1NXVer", 
+  qrisApiToken: "RyuuXiao", // Diperbarui
+  qrisUsername: "adjie22", // Diperbarui
+  qrisOrderToken: "1451589:fsoScMnGEp6kjIQav2L7l0ZWgd1NXVer", // Diperbarui
 
   // Variabel untuk menyimpan data QRIS saat ini
   CURRENT_QRIS_KEY: "current_qris_session",
   STORAGE_KEY: "riwayat_transaksi_panel",
 };
 
-// 1. STRUKTUR DATA HARGA DAN SPESIFIKASI PANEL BARU
+// STRUKTUR DATA HARGA DAN SPESIFIKASI PANEL LENGKAP
 const PACKAGE_CONFIG = {
-  // Key harus sesuai dengan nilai 'value' di HTML option
-  '1gb': { nama: '1gb', harga: 10000, memo: 1048, disk: 2000, cpu: 30 },
-  '2gb': { nama: '2gb', harga: 20000, memo: 2048, disk: 4000, cpu: 50 },
-  '3gb': { nama: '3gb', harga: 30000, memo: 3048, disk: 6000, cpu: 75 },
-  '4g ': { nama: '4gb', harga: 40000, memo: 4048, disk: 8000, cpu: 100 },
-  // Tambahkan paket lain yang ingin Anda dukung di HTML
-  // '50000': { nama: '5gb', harga: 50000, memo: 5048, disk: 2000, cpu: 130 },
-  // ...
+  // value: { nama: 'Xgb', harga: X, memo: X MB, disk: X MB, cpu: X% }
+  '2000':  { nama: '1gb', harga: 2000,  memo: 1048,  disk: 2000, cpu: 30  },
+  '3000':  { nama: '2gb', harga: 3000,  memo: 2048,  disk: 2000, cpu: 50  },
+  '4000':  { nama: '3gb', harga: 4000,  memo: 3048,  disk: 2000, cpu: 75  },
+  '5000':  { nama: '4gb', harga: 5000,  memo: 4048,  disk: 2000, cpu: 100 },
+  '6000':  { nama: '5gb', harga: 6000,  memo: 5048,  disk: 2000, cpu: 130 },
+  '7000':  { nama: '6gb', harga: 7000,  memo: 6048,  disk: 2000, cpu: 150 },
+  '8000':  { nama: '7gb', harga: 8000,  memo: 7048,  disk: 2000, cpu: 175 },
+  '9000':  { nama: '8gb', harga: 9000,  memo: 8048,  disk: 2000, cpu: 200 },
+  '10000': { nama: '9gb', harga: 10000, memo: 9048,  disk: 2000, cpu: 225 },
+  '12000': { nama: '10gb', harga: 12000, memo: 10048, disk: 2000, cpu: 250 },
+  '15000': { nama: 'unli', harga: 15000, memo: 0,     disk: 0,    cpu: 0 } // Asumsi unli disk dan ram = 0
 };
 
 
@@ -34,17 +38,18 @@ function $(id){return document.getElementById(id);}
 
 // Fungsi Pembantu
 function toRupiah(number) {
+    // Fungsi ini aman untuk input non-angka atau null, akan mengembalikan 'Rp0' jika gagal.
+    if (isNaN(number) || number === null) return 'RpN/A';
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number).replace('Rp', 'Rp');
 }
 function getSelectedRamInfo() {
   const selectEl = $("ram");
-  const selectedOption = selectEl.options[selectEl.selectedIndex];
-  const harga = selectedOption.value ? parseInt(selectedOption.value) : 0;
+  const selectedValue = selectEl.value; // Mengambil value (harga)
   
-  // Cari info paket dari PACKAGE_CONFIG berdasarkan harga (value di option)
-  const config = PACKAGE_CONFIG[harga.toString()]; 
+  // Cari info paket dari PACKAGE_CONFIG berdasarkan harga (value)
+  const config = PACKAGE_CONFIG[selectedValue]; 
   
-  // Mengembalikan data lengkap atau default jika tidak ditemukan
+  // Mengembalikan data lengkap atau default jika tidak ditemukan (penting untuk cek validasi)
   return config || { nama: 'N/A', harga: 0, memo: 0, disk: 0, cpu: 0 };
 }
 
@@ -73,7 +78,6 @@ function loadSavedQris() {
         const qrisData = JSON.parse(savedQris);
         const now = Date.now();
         
-        // Cek kadaluarsa
         if (qrisData.waktuKadaluarsa && qrisData.waktuKadaluarsa < now) {
             localStorage.removeItem(global.CURRENT_QRIS_KEY);
             return;
@@ -84,8 +88,6 @@ function loadSavedQris() {
         $("qrisSection").classList.remove("hidden");
         $("btnBatal").classList.remove("hidden");
         
-        // Lanjutkan pengecekan mutasi
-        // Menggunakan qrisData.harga sebagai amount/ramHarga
         mulaiCekMutasi(qrisData.paymentId, qrisData.username, qrisData.harga);
 
     } catch(e) {
@@ -97,11 +99,12 @@ function loadSavedQris() {
 // QRIS REAL
 async function buatQris(){
   const username=$("username").value.trim();
-  const { harga: ramHarga, nama: ramNama } = getSelectedRamInfo(); // Mengambil nama dan harga
+  const { harga: ramHarga, nama: ramNama } = getSelectedRamInfo(); 
   const ramValue = ramHarga;
 
+  // PERBAIKAN 1: Cek apakah harga > 0 (artinya opsi sudah dipilih)
   if(!username){ alert("Username tidak boleh kosong."); return; }
-  if(ramValue <= 0){ alert("Pilih paket RAM terlebih dahulu."); return; }
+  if(ramValue <= 0){ alert("Pilih paket RAM terlebih dahulu."); return; } 
 
   const loadingText=$("loadingText");
   const qrisSection=$("qrisSection");
@@ -116,7 +119,6 @@ async function buatQris(){
         return;
     }
     
-    // Menggunakan harga sebagai 'amount'
     const url=`${global.qrisBaseUrl}/orderkuota/createpayment?apikey=${global.qrisApiToken}&username=${global.qrisUsername}&token=${global.qrisOrderToken}&amount=${ramValue}`;
     const res=await fetch(url);
     const data=await res.json();
@@ -142,12 +144,11 @@ async function buatQris(){
       "INFORMASI PEMBAYARAN\n"+
       `ID        : ${paymentId}\n`+
       `Username  : ${username}\n`+
-      `Paket     : ${ramNama} (${toRupiah(ramHarga)})\n`+ 
+      `Paket     : ${ramNama.toUpperCase()} (${toRupiah(ramHarga)})\n`+ 
       `Waktu     : ${waktu}`;
       
     $("detailPembayaran").textContent = detailText;
 
-    // Simpan status QRIS ke Local Storage
     localStorage.setItem(global.CURRENT_QRIS_KEY, JSON.stringify({
         paymentId,
         username,
@@ -155,7 +156,7 @@ async function buatQris(){
         ramNama,
         qrUrl,
         detailText,
-        waktuKadaluarsa: Date.now() + (30 * 60 * 1000) // Kadaluarsa 30 menit
+        waktuKadaluarsa: Date.now() + (30 * 60 * 1000) // 30 menit
     }));
 
     mulaiCekMutasi(paymentId, username, ramHarga);
@@ -193,11 +194,9 @@ async function mulaiCekMutasi(paymentId, username, ramHarga){
           clearInterval(mutasiInterval);
           localStorage.removeItem(global.CURRENT_QRIS_KEY); 
           
-          // Simpan dengan status Sukses
           simpanRiwayat({id:paymentId,username,harga:ramHarga,waktu:new Date().toLocaleString("id-ID"), status: "Sukses"});
           
           alert("Pembayaran diterima! Membuat server...");
-          // Panggil buatServerPTLA dengan harga/paket yang sudah terdeteksi
           buatServerPTLA(username, ramHarga); 
           batalQris(); 
           return;
@@ -227,9 +226,8 @@ async function mulaiCekMutasi(paymentId, username, ramHarga){
   },10000);
 }
 
-// 2. PTLA CREATE SERVER DENGAN LOGIKA SPESIFIKASI BARU
+// PTLA CREATE SERVER DENGAN LOGIKA SPESIFIKASI BARU
 async function buatServerPTLA(username, ramHarga){
-  // Ambil konfigurasi paket berdasarkan harga yang dibayarkan
   const config = PACKAGE_CONFIG[ramHarga.toString()];
 
   if (!config) {
@@ -240,12 +238,21 @@ async function buatServerPTLA(username, ramHarga){
   try{
     const payload={
       server_name: username,
-      // Menggunakan nilai dari PACKAGE_CONFIG
-      ram: config.memo,     // Memory (RAM) dalam MB
-      disk: config.disk,    // Disk dalam MB (diasumsikan 2000MB/2GB)
-      cpu: config.cpu,      // CPU dalam %
+      ram: config.memo,     
+      disk: config.disk,    
+      cpu: config.cpu,      
       user: username
     };
+    
+    // Khusus untuk paket UNLI, mungkin perlu logika khusus jika Pterodactyl menolak 0
+    if (config.nama === 'unli') {
+        // Asumsi unli di panel berarti nilai yang sangat besar atau nilai default yang valid,
+        // misalnya, 999999 MB RAM, 999999 MB Disk, dan 100% CPU.
+        payload.ram = 999999; 
+        payload.disk = 999999;
+        payload.cpu = 100;
+    }
+
 
     const res=await fetch(`${global.domain}/api/create`,{
       method:"POST",
@@ -288,22 +295,20 @@ function getRiwayat(){
     const raw=localStorage.getItem(global.STORAGE_KEY);
     if(!raw) return [];
     const p=JSON.parse(raw);
-    // Tambahkan 'id' jika belum ada untuk memastikan setiap item bisa dihapus
     return Array.isArray(p) ? p.map(item => ({...item, uniqueId: item.uniqueId || Math.random().toString(36).substring(2) + Date.now()})) : [];
   }catch{return [];}
 }
 
 function simpanRiwayat(d){
   const l=getRiwayat(); 
-  l.push({...d, uniqueId: Math.random().toString(36).substring(2) + Date.now()}); // Tambahkan ID unik
+  l.push({...d, uniqueId: Math.random().toString(36).substring(2) + Date.now()}); 
   localStorage.setItem(global.STORAGE_KEY,JSON.stringify(l));
 }
 
-// 4. Render Riwayat di Modal (Popup) - Hanya Sukses
+// Render Riwayat di Modal (Popup) - Hanya Sukses
 function renderRiwayat(){
   const c=$("riwayatList");
   const list=getRiwayat();
-  // Filter hanya yang statusnya "Sukses"
   const successList = list.filter(item => item.status === "Sukses");
 
   if(!successList.length){
@@ -312,13 +317,12 @@ function renderRiwayat(){
   c.innerHTML="";
   successList.sort((a,b)=>new Date(b.waktu)-new Date(a.waktu));
   successList.forEach(item=>{
-    const div=document.createElement("div");
-    div.className="riwayat-item";
-    
     const config = PACKAGE_CONFIG[item.harga.toString()];
     const paketNama = config ? config.nama.toUpperCase() : 'N/A';
     const hargaText = item.harga ? toRupiah(item.harga) : 'RpN/A';
     
+    const div=document.createElement("div");
+    div.className="riwayat-item";
     div.innerHTML=
       `<div class='riwayat-item-title'>Panel ${paketNama}</div>`+
       `<div class='riwayat-item-meta'>💰 Harga: ${hargaText}</div>`+
@@ -326,20 +330,19 @@ function renderRiwayat(){
       `<div class='riwayat-item-meta'>🕒 Waktu: ${item.waktu}</div>`+
       `<div class='riwayat-item-meta'>🆔 ID Transaksi: ${item.id}</div>`+
       `<div class='riwayat-item-meta'>✅ Status: ${item.status || "Sukses"}</div>`+
-      // 3. Tambah tombol hapus
       `<button class="btn-delete" onclick="hapusRiwayat('${item.uniqueId}')">Hapus</button>`; 
     c.appendChild(div);
   });
 }
 
-// 3. Fungsi Hapus Riwayat
+// Fungsi Hapus Riwayat
 function hapusRiwayat(uniqueId) {
     if (!confirm("Apakah Anda yakin ingin menghapus riwayat ini?")) return;
 
     const list = getRiwayat().filter(item => item.uniqueId !== uniqueId);
     localStorage.setItem(global.STORAGE_KEY, JSON.stringify(list));
     
-    renderRiwayat(); // Perbarui tampilan modal
+    renderRiwayat(); 
 }
 
 
@@ -365,6 +368,6 @@ function setupPullToRefreshBlocker(){
 
 window.addEventListener("load",()=>{
     setupPullToRefreshBlocker();
-    updateTotalHarga(); // Inisialisasi display harga
-    loadSavedQris();    // Cek status QRIS saat refresh
+    updateTotalHarga(); 
+    loadSavedQris();    
 });
