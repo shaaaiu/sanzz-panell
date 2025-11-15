@@ -122,6 +122,14 @@ select:focus {
   box-shadow: 0 0 0 1px rgba(81, 255, 157, 0.4);
 }
 
+/* HARGA */
+.total-harga {
+  margin: 12px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #51ff9d;
+}
+
 /* BUTTONS */
 .buttons-row {
   display: flex;
@@ -154,6 +162,7 @@ select:focus {
   background: linear-gradient(90deg, #00ff95, #51ff9d);
   color: #031409;
   box-shadow: 0 8px 24px rgba(0, 255, 149, 0.45);
+  flex-grow: 1; /* Agar memanjang jika ruang tersedia */
 }
 
 .btn-primary:hover {
@@ -165,9 +174,22 @@ select:focus {
   background: rgba(11, 22, 16, 0.9);
   color: #e4ffe8;
   border: 1px solid rgba(143, 255, 169, 0.25);
+  flex-grow: 1;
 }
 
 .btn-ghost:hover {
+  background: rgba(19, 34, 25, 0.95);
+}
+
+.btn-secondary {
+  /* Untuk tombol 'Lihat Riwayat Transaksi' */
+  background: rgba(11, 22, 16, 0.9);
+  color: #e4ffe8;
+  border: 1px solid rgba(143, 255, 169, 0.25);
+  width: 100%;
+}
+
+.btn-secondary:hover {
   background: rgba(19, 34, 25, 0.95);
 }
 
@@ -176,6 +198,7 @@ select:focus {
   background: linear-gradient(90deg, #ff4f63, #ff9351);
   color: #140203;
   box-shadow: 0 8px 24px rgba(255, 87, 87, 0.5);
+  flex-grow: 1;
 }
 
 .btn-danger:hover {
@@ -229,8 +252,72 @@ select:focus {
   border: 1px solid rgba(143, 255, 169, 0.25);
 }
 
-/* RIWAYAT LIST */
-.riwayat-list-empty {
+/* ================================================= */
+/* --- MODAL (POPUP) STYLING --- */
+/* ================================================= */
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: none; /* Disembunyikan secara default */
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modal.show {
+  display: flex; /* Ditampilkan saat class 'show' ditambahkan oleh JS */
+  opacity: 1;
+}
+
+.modal-content {
+  background: radial-gradient(circle at top left, #1d3329 0, #0a110d 55%);
+  border-radius: 18px;
+  max-width: 90%;
+  width: 400px;
+  padding: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(143, 255, 169, 0.25);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(143, 255, 169, 0.1);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 18px;
+  color: #b4ff3b;
+}
+
+.close-btn {
+  font-size: 24px;
+  font-weight: 300;
+  cursor: pointer;
+  color: #ff9351;
+  line-height: 1;
+  padding: 0 5px;
+}
+
+.modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 5px; /* Untuk memberi ruang scrollbar */
+}
+
+/* RIWAYAT LIST STYLING */
+.riwayat-empty {
   font-size: 13px;
   color: #a4c7aa;
 }
@@ -242,11 +329,80 @@ select:focus {
   background: rgba(7, 16, 11, 0.9);
   border: 1px solid rgba(143, 255, 169, 0.18);
   font-size: 12px;
+  
+  /* Tambahan untuk menata detail akun dan tombol */
+  display: flex;
+  flex-direction: column;
 }
 
-.riwayat-item strong {
-  color: #9bffb3;
+.riwayat-item-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #51ff9d;
+    margin-bottom: 5px;
 }
+.riwayat-item-meta {
+    margin-bottom: 2px;
+    color: #c1e6c5;
+}
+
+/* Detail Akun di dalam riwayat */
+.account-detail {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  padding: 5px;
+  background-color: #122119; /* Warna latar belakang untuk detail akun */
+  border-radius: 4px;
+  font-size: 13px;
+}
+.account-detail strong {
+    color: #51ff9d;
+}
+
+/* Aksi (Tombol) di dalam riwayat */
+.riwayat-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Tombol Copy Login */
+.btn-copy {
+  background-color: #3498db; /* Biru */
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.3s;
+  flex-grow: 1;
+}
+
+.btn-copy:hover {
+  background-color: #2980b9;
+}
+
+/* Tombol Hapus */
+.btn-delete {
+  background-color: #e74c3c; /* Merah */
+  color: white;
+  border: none;
+  padding: 8px 12px; 
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.3s;
+  flex-grow: 1;
+}
+
+.btn-delete:hover {
+  background-color: #c0392b;
+}
+
+/* ================================================= */
+/* --- GENERAL STYLING --- */
+/* ================================================= */
 
 /* HELPERS */
 .hidden {
