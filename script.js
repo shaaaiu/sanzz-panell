@@ -1,4 +1,4 @@
-// GLOBAL CONFIG (Tidak diubah dari jawaban terakhir)
+// GLOBAL CONFIG DENGAN TELEGRAM
 const global = {
   domain: "https://panel.xiao-store.web.id",
   apikey: "ptla_ll4q9Ks59PRs0ZviiEa3e5g9x3fbTPPh909arpx9gG1",
@@ -13,11 +13,17 @@ const global = {
 
   CURRENT_QRIS_KEY: "current_qris_session",
   STORAGE_KEY: "riwayat_transaksi_panel",
-  // Tambahan: Link Login Panel (Asumsi menggunakan domain Pterodactyl yang sama)
-  PANEL_LOGIN_LINK: "https://panel.xiao-store.web.id" // GANTI DENGAN LINK PANEL ANDA
+  PANEL_LOGIN_LINK: "https://panel.xiao-store.web.id",
+  
+  // ==========================================================
+  // !!! KONFIGURASI TELEGRAM BARU !!!
+  // GANTI INI DENGAN BOT TOKEN & CHAT ID (ID TELEGRAM ANDA)
+  TELEGRAM_BOT_TOKEN: "7724085258:AAEbMfcySTFwPPL_xHcdr0EYm0oCD6oYNRI", // Contoh: 1234567890:ABC-DEF1234
+  TELEGRAM_CHAT_ID: "5254873680", // Contoh: 123456789
+  // ==========================================================
 };
 
-// PACKAGE CONFIG (Tidak diubah dari jawaban terakhir)
+// PACKAGE CONFIG (Tidak diubah)
 const PACKAGE_CONFIG = {
   '1':  { nama: '500mb', harga: 1,  memo: 1048,  disk: 2000, cpu: 30  },
   '2000':  { nama: '1gb', harga: 2000,  memo: 1048,  disk: 2000, cpu: 30  },
@@ -26,7 +32,7 @@ const PACKAGE_CONFIG = {
   '5000':  { nama: '4gb', harga: 5000,  memo: 4048,  disk: 2000, cpu: 100 },
   '6000':  { nama: '5gb', harga: 6000,  memo: 5048,  disk: 2000, cpu: 130 },
   '7000':  { nama: '6gb', harga: 7000,  memo: 6048,  disk: 2000, cpu: 150 },
-  '8000':  { nama: '7gb', harga: 8000,  memo: 7048,  disk: 2000, cpu: 175 },
+  '8000':  { nama: '7gb', harga: 7048,  disk: 2000, cpu: 175 }, // CATATAN: memo 7048 di sini
   '9000':  { nama: '8gb', harga: 9000,  memo: 8048,  disk: 2000, cpu: 200 },
   '10000': { nama: '9gb', harga: 10000, memo: 9048,  disk: 2000, cpu: 225 },
   '12000': { nama: '10gb', harga: 12000, memo: 10048, disk: 2000, cpu: 250 },
@@ -49,12 +55,14 @@ function updateTotalHarga() {
   $("totalHarga").textContent = `Total Harga: ${toRupiah(harga)}`;
 }
 function refreshInput(){
+  const teleponEl=$("telepon"); 
   const usernameEl=$("username"); 
   const ramEl=$("ram");
+  if(teleponEl) teleponEl.value="";
   if(usernameEl) usernameEl.value="";
   if(ramEl) ramEl.selectedIndex=0;
   updateTotalHarga(); 
-  alert("Input username dan pilihan panel berhasil di-reset.");
+  alert("Input berhasil di-reset.");
 }
 function loadSavedQris() {
     const savedQris = localStorage.getItem(global.CURRENT_QRIS_KEY);
@@ -69,6 +77,8 @@ function loadSavedQris() {
             return false;
         }
         
+        // Memuat input yang tersimpan
+        $("telepon").value = qrisData.telepon || ''; 
         $("username").value = qrisData.username || '';
         $("ram").value = qrisData.harga ? qrisData.harga.toString() : '';
         updateTotalHarga();
@@ -78,7 +88,7 @@ function loadSavedQris() {
         $("qrisSection").classList.remove("hidden");
         $("btnBatal").classList.remove("hidden");
         
-        mulaiCekMutasi(qrisData.paymentId, qrisData.username, qrisData.harga);
+        mulaiCekMutasi(qrisData.paymentId, qrisData.username, qrisData.harga, qrisData.telepon);
         return true;
 
     } catch(e) {
@@ -87,11 +97,42 @@ function loadSavedQris() {
         return false;
     }
 }
+
+// FUNGSI TELEGRAM BARU
+async function sendTelegramNotification(message) {
+    if (!global.TELEGRAM_BOT_TOKEN || !global.TELEGRAM_CHAT_ID) {
+        console.warn("Konfigurasi Telegram Bot Token atau Chat ID belum disetel.");
+        return;
+    }
+    
+    const url = `https://api.telegram.org/bot${global.TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const params = {
+        chat_id: global.TELEGRAM_CHAT_ID,
+        text: message,
+        parse_mode: 'Markdown'
+    };
+
+    const queryString = new URLSearchParams(params).toString();
+    
+    try {
+        const response = await fetch(`${url}?${queryString}`);
+        if (!response.ok) {
+            const data = await response.json();
+            console.error("Gagal mengirim notifikasi Telegram:", data);
+        }
+    } catch (e) {
+        console.error("Kesalahan jaringan saat mengirim notifikasi Telegram:", e);
+    }
+}
+
+
 async function buatQris(){
+  const telepon=$("telepon").value.trim(); // Ambil input telepon
   const username=$("username").value.trim();
   const { harga: ramHarga, nama: ramNama } = getSelectedRamInfo(); 
   const ramValue = ramHarga;
 
+  if(!telepon){ alert("Nomor Telepon tidak boleh kosong."); return; } // Validasi baru
   if(!username){ alert("Username tidak boleh kosong."); return; }
   if(ramValue <= 0){ alert("Pilih paket RAM terlebih dahulu."); return; } 
 
@@ -141,6 +182,7 @@ async function buatQris(){
     localStorage.setItem(global.CURRENT_QRIS_KEY, JSON.stringify({
         paymentId,
         username,
+        telepon, // Simpan telepon
         harga: ramHarga,
         ramNama,
         qrUrl,
@@ -148,7 +190,7 @@ async function buatQris(){
         waktuKadaluarsa: Date.now() + (30 * 60 * 1000)
     }));
 
-    mulaiCekMutasi(paymentId, username, ramHarga);
+    mulaiCekMutasi(paymentId, username, ramHarga, telepon);
   
   }catch(err){
     console.error(err);
@@ -157,10 +199,10 @@ async function buatQris(){
   }
 }
 
-// AUTO MUTASI
+// AUTO MUTASI DENGAN NOMOR TELEPON
 let mutasiInterval;
 
-async function mulaiCekMutasi(paymentId, username, ramHarga){
+async function mulaiCekMutasi(paymentId, username, ramHarga, telepon){
   let counter=0; const maxCheck=60;
 
   if (mutasiInterval) clearInterval(mutasiInterval);
@@ -186,24 +228,39 @@ async function mulaiCekMutasi(paymentId, username, ramHarga){
           // Hitung Waktu Kedaluwarsa (1 bulan = 30 hari)
           const now = new Date();
           const expireDate = new Date(now.setMonth(now.getMonth() + 1));
+          const { nama: ramNama } = getSelectedRamInfo(); 
           
-          // Simpan dengan detail akun tambahan
+          // Simpan dengan detail akun tambahan dan telepon
           simpanRiwayat({
               id: paymentId,
               username: username,
+              telepon: telepon,
               harga: ramHarga,
               waktu: new Date().toLocaleString("id-ID"),
               status: "Sukses",
-              panelUser: username, // Username panel
-              panelPass: username, // Password panel = Username
-              panelLink: global.PANEL_LOGIN_LINK, // Link Login
-              exp: expireDate.toLocaleDateString("id-ID") // Tgl Kedaluwarsa
+              panelUser: username, 
+              panelPass: username, 
+              panelLink: global.PANEL_LOGIN_LINK, 
+              exp: expireDate.toLocaleDateString("id-ID") 
           });
+          
+          // --- FUNGSI NOTIFIKASI TELEGRAM ---
+          const totalRam = ramHarga.toString(); 
+          const notifMsg = 
+            `💰 *TRANSAKSI BARU BERHASIL* 💰\n\n`+
+            `*ID Transaksi:* ${paymentId}\n`+
+            `*Harga:* ${toRupiah(ramHarga)}\n`+
+            `*Paket RAM:* ${ramNama.toUpperCase()}\n`+
+            `*Username:* ${username}\n`+
+            `*Nomor Pembeli:* ${telepon}\n`+
+            `*Waktu:* ${new Date().toLocaleString("id-ID")}\n\n`+
+            `Server akan segera dibuat otomatis.`;
+            
+          sendTelegramNotification(notifMsg);
+          // -----------------------------------
           
           alert("Pembayaran diterima! Server akan segera dibuat.");
           buatServerPTLA(username, ramHarga); 
-          
-          // Perbaikan: Panggil fungsi closeQris (tanpa alert)
           closeQris(); 
           return;
         }
@@ -213,7 +270,7 @@ async function mulaiCekMutasi(paymentId, username, ramHarga){
         clearInterval(mutasiInterval);
         localStorage.removeItem(global.CURRENT_QRIS_KEY);
         alert("Waktu pembayaran habis.");
-        batalQris(true); // Kirim true untuk menampilkan alert batal
+        batalQris(true); 
       }
 
     }catch(e){ 
@@ -231,6 +288,8 @@ async function mulaiCekMutasi(paymentId, username, ramHarga){
     }
   },10000);
 }
+
+// ... (closeQris, batalQris, buatServerPTLA, RIWAYAT, dll. tidak diubah) ...
 
 // Fungsi Penutup QRIS TANPA Alert
 function closeQris(){
@@ -325,7 +384,7 @@ function simpanRiwayat(d){
   localStorage.setItem(global.STORAGE_KEY,JSON.stringify(l));
 }
 
-// Perbaikan: Render Riwayat di Modal dengan detail akun
+// Render Riwayat di Modal dengan detail akun
 function renderRiwayat(){
   const c=$("riwayatList");
   const list=getRiwayat();
@@ -341,7 +400,7 @@ function renderRiwayat(){
     const paketNama = config ? config.nama.toUpperCase() : 'N/A';
     const hargaText = item.harga ? toRupiah(item.harga) : 'RpN/A';
     
-    const panelUser = item.panelUser || item.username; // Ambil data akun
+    const panelUser = item.panelUser || item.username; 
     const panelPass = item.panelPass || item.username;
     const panelLink = item.panelLink || 'N/A';
     const expDate = item.exp || 'N/A';
@@ -352,6 +411,7 @@ function renderRiwayat(){
     div.innerHTML=
       `<div class='riwayat-item-title'>Panel ${paketNama} - ${hargaText}</div>`+
       `<div class='riwayat-item-meta'>🆔 ID Transaksi: ${item.id}</div>`+
+      `<div class='riwayat-item-meta'>📞 Nomor: ${item.telepon || 'N/A'}</div>`+ // Tampilkan Nomor
       `<div class='riwayat-item-meta'>🕒 Waktu Beli: ${item.waktu}</div>`+
       `<div class='riwayat-item-meta'>📅 Exp: ${expDate}</div>`+
       `<div class='riwayat-item-meta account-detail'>`+
@@ -415,4 +475,4 @@ window.addEventListener("load",()=>{
         updateTotalHarga(); 
     }
 });
-  
+    
