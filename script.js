@@ -1,13 +1,14 @@
-// GLOBAL CONFIG DENGAN TELEGRAM DAN API ADMIN (DATA BARU DIMASUKKAN)
+// GLOBAL CONFIG (!!! HARAP GANTI DENGAN ENDPOINT SERVER ANDA !!!)
 const global = {
   domain: "https://panel.xiao-store.web.id", 
-  apikey: "ptla_sRRmcKRjicoJfsioKKZqlb8221avLOQlLdzNFJifzzE", // Kunci PTLA BARU Anda
   
-  // !!! PENTING: TAMBAHKAN KUNCI PTLAN/PTLC DI SINI !!!
-  // Kunci ini digunakan untuk membuat akun pengguna (User) di API admin/panel
-  admin_url: "https://panel.xiao-store.web.id", 
-  // Catatan: admin_apikey masih placeholder. Harap ganti!
-  admin_apikey: "ptla_sRRmcKRjicoJfsioKKZqlb8221avLOQlLdzNFJifzzE", 
+  // !!! PENTING: Kunci API Pterodactyl/Telegram TELAH DIHAPUS DARI SINI
+  // KARENA INI ADALAH KODE CLIENT-SIDE (BERBAHAYA).
+  // Anda harus membuat endpoint server untuk tugas admin.
+  
+  // Endpoint API Server Anda untuk membuat user/server.
+  // Ganti URL ini dengan URL API SERVER-SIDE yang akan Anda buat!
+  ADMIN_SERVER_API: "ptla_sRRmcKRjicoJfsioKKZqlb8221avLOQlLdzNFJifzzE", // GANTI INI!
   
   nestid: "5",
   egg: "15",
@@ -22,9 +23,9 @@ const global = {
   STORAGE_KEY: "riwayat_transaksi_panel",
   PANEL_LOGIN_LINK: "https://panel.xiao-store.web.id",
   
-  // KONFIGURASI TELEGRAM BARU
+  // KONFIGURASI TELEGRAM BARU (Akan dilakukan oleh Server-side)
   TELEGRAM_BOT_TOKEN: "7724085258:AAEbMfcySTFwPPL_xHcdr0EYm0oCD6oYNRI",
-  TELEGRAM_CHAT_ID: "5254873680",
+  TELEGRAM_CHAT_ID: "5254873680_DUMMY",
 };
 
 // PACKAGE CONFIG (Nilai Memory, Disk, CPU akan digunakan sesuai paket)
@@ -108,12 +109,15 @@ function loadSavedQris() {
     }
 }
 
+// FUNGSI SEND TELEGRAM DI SISI CLIENT INI TIDAK AMAN, KARENA KEY BOT TEREKSPOS.
+// SEBAIKNYA PANGGIL API SERVER ANDA UNTUK MENGIRIM NOTIFIKASI TELEGRAM.
 async function sendTelegramNotification(message) {
-    if (!global.TELEGRAM_BOT_TOKEN || !global.TELEGRAM_CHAT_ID) {
-        console.warn("Konfigurasi Telegram Bot Token atau Chat ID belum disetel.");
+    if (global.TELEGRAM_BOT_TOKEN.includes('DUMMY') || global.TELEGRAM_CHAT_ID.includes('DUMMY')) {
+        console.warn("Konfigurasi Telegram Bot Token atau Chat ID belum disetel. Melewatkan notifikasi.");
         return;
     }
     
+    // Logika ini akan saya pertahankan, tapi JANGAN gunakan key asli di sini.
     const url = `https://api.telegram.org/bot${global.TELEGRAM_BOT_TOKEN}/sendMessage`;
     const params = {
         chat_id: global.TELEGRAM_CHAT_ID,
@@ -237,7 +241,6 @@ async function mulaiCekMutasi(paymentId, username, totalHargaDibayar, telepon, h
           const now = new Date();
           const expireDate = new Date(now.setMonth(now.getMonth() + 1));
           
-          // Menggunakan hargaTanpaUnik yang sudah pasti benar dari parameter
           const config = PACKAGE_CONFIG[hargaTanpaUnik.toString()];
           const ramNama = config ? config.nama : 'N/A';
 
@@ -269,7 +272,8 @@ async function mulaiCekMutasi(paymentId, username, totalHargaDibayar, telepon, h
           
           alert("Pembayaran diterima! Server akan segera dibuat.");
           
-          buatUserDanServer(username, hargaTanpaUnik, telepon); 
+          // !!! PANGGIL FUNGSI BARU UNTUK BERKOMUNIKASI DENGAN SERVER-SIDE API !!!
+          panggilServerBuatAkun(username, hargaTanpaUnik, telepon); 
           
           closeQris(); 
           return;
@@ -326,158 +330,63 @@ function batalQris(show_alert = false){
 }
 
 // ===============================================
-// FUNGSI BUAT USER DAN SERVER (DENGAN LOGIKA DISK/MEMORY DINAMIS)
+// FUNGSI BARU: PANGGIL SERVER UNTUK BUAT USER DAN SERVER
 // ===============================================
 
-async function buatUserDanServer(username, ramHarga, telepon) {
-    alert("Memulai proses pembuatan user dan server...");
-    
-    let userId;
+async function panggilServerBuatAkun(username, ramHarga, telepon) {
+    alert("Mengirim permintaan ke server untuk proses pembuatan akun...");
     
     try {
+        if (global.ADMIN_SERVER_API === "https://api.yourserver.com/create-server") {
+             throw new Error("ADMIN_SERVER_API belum diatur ke endpoint server Anda!");
+        }
+        
         // 1. Dapatkan Konfigurasi Paket RAM, DISK, CPU
         const config = PACKAGE_CONFIG[ramHarga.toString()];
         
         if (!config) {
             throw new Error("Konfigurasi paket RAM tidak ditemukan. Harga paket tidak valid.");
         }
-        
-        // 2. BUAT USER BARU DI PTERODACTYL
-        const userPass = username;
-        const userEmail = `${username}@tempmail.com`;
-        const userPayload = {
-            email: userEmail,
+
+        // Kirim data yang dibutuhkan ke server Anda
+        const payload = {
             username: username,
-            first_name: username,
-            last_name: 'Panel',
-            password: userPass
+            telepon: telepon,
+            ramHarga: ramHarga, // Kirim harga untuk identifikasi paket
+            // Anda bisa mengirim memo, disk, cpu jika perlu, tapi lebih baik server yang tentukan
+            memo: config.memo,
+            disk: config.disk,
+            cpu: config.cpu,
+            nest: global.nestid,
+            egg: global.egg,
+            loc: global.loc
         };
 
-        const userRes = await fetch(`${global.admin_url}/api/application/users`, {
+        const res = await fetch(global.ADMIN_SERVER_API, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "Authorization": `Bearer ${global.admin_apikey}`
+                "Content-Type": "application/json"
             },
-            body: JSON.stringify(userPayload)
+            body: JSON.stringify(payload)
         });
 
-        const userData = await userRes.json();
+        const data = await res.json();
         
-        if (userRes.status === 422 && userData.errors && userData.errors.username) {
-             console.warn("Username sudah terdaftar, mencoba mengambil ID yang sudah ada.");
-             const searchRes = await fetch(`${global.admin_url}/api/application/users?filter[username]=${username}`, {
-                headers: {
-                    "Accept": "application/json",
-                    "Authorization": `Bearer ${global.admin_apikey}`
-                }
-             });
-             const searchData = await searchRes.json();
-             if (searchData.data.length > 0) {
-                 userId = searchData.data[0].attributes.id;
-             } else {
-                 throw new Error("Gagal membuat user dan user tidak ditemukan.");
-             }
-        } else if (!userRes.ok) {
-            console.error("Gagal membuat user:", userData);
-            throw new Error(`Gagal membuat user: ${userData.errors ? userData.errors[0].detail : userRes.statusText}`);
-        } else {
-            userId = userData.attributes.id;
-        }
-
-        if (!userId) {
-             throw new Error("Gagal mendapatkan User ID.");
+        if (!res.ok || data.error) {
+            console.error("Gagal membuat user/server melalui server API:", data);
+            throw new Error(`Server Error: ${data.message || data.error || res.statusText}`);
         }
         
-        console.log(`User ID berhasil didapatkan: ${userId}`);
-
-        // 3. BUAT SERVER (PTLA API Key)
-        let memoryLimit = config.memo;
-        let diskLimit = config.disk;
-        let cpuLimit = config.cpu;
+        // Asumsi server mengembalikan detail yang sukses
+        const serverId = data.serverId || "N/A"; 
+        alert(`Server berhasil dibuat! ID Server: ${serverId}. Password default: ${username}`);
         
-        // LOGIKA UNTUK PAKET UNLI (Override limits)
-        if (config.nama === 'unli') {
-            memoryLimit = 999999; 
-            diskLimit = 999999;
-            cpuLimit = 100; // CPU Unli disetel ke 100% (atau sesuai keinginan Anda)
-        }
-
-        const serverPayload = {
-            name: username,
-            user: userId,
-            
-            // Menggunakan nilai global statis untuk Nest, Egg, dan Lokasi
-            egg: parseInt(global.egg),
-            nest: parseInt(global.nestid),
-            location: parseInt(global.loc), 
-
-            docker_image: "quay.io/pterodactyl/core:java", 
-            start_on_completion: true,
-            environment: {
-                "SERVER_JARFILE": "server.jar", 
-                "P_SERVER_LOCATION": "World"
-            },
-            // LIMITS DIAMBIL DARI LOGIKA DI ATAS
-            limits: {
-                memory: memoryLimit,
-                swap: 0,
-                disk: diskLimit,
-                io: 500,
-                cpu: cpuLimit
-            },
-            feature_limits: {
-                databases: 0,
-                allocations: 1,
-                backups: 0
-            }
-        };
+        // Server Anda yang seharusnya mengirim notifikasi Telegram sukses.
+        // Jika perlu, Anda bisa mengirim notifikasi ke server untuk dikirim ke Telegram di sini.
         
-
-        const serverRes = await fetch(`${global.domain}/api/create`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": global.apikey 
-            },
-            body: JSON.stringify(serverPayload)
-        });
-        
-        const serverData = await serverRes.json();
-        
-        if (!serverData.success) {
-            console.error("Gagal membuat server:", serverData);
-            throw new Error(`Gagal membuat server: ${serverData.message || "Kesalahan API PTLA"}`);
-        }
-        
-        const serverId = serverData.server_id || "N/A";
-        alert(`Server berhasil dibuat! ID Server: ${serverId}`);
-        
-        // Kirim Notifikasi Sukses
-        const successMsg = 
-            `✅ *SERVER BERHASIL DIBUAT!* ✅\n\n`+
-            `*User ID:* ${userId}\n`+
-            `*Server ID:* ${serverId}\n`+
-            `*Username:* ${username}\n`+
-            `*Password:* ${username}\n`+
-            `*Link Login:* ${global.PANEL_LOGIN_LINK}\n`+
-            `*Nomor:* ${telepon}`;
-        
-        sendTelegramNotification(successMsg);
-
     } catch (e) {
         console.error(e);
-        const errorMsg = 
-            `❌ *GAGAL MEMBUAT SERVER/USER* ❌\n\n`+
-            `*Username:* ${username}\n`+
-            `*Paket:* ${ramHarga} (Harga Dasar)\n`+
-            `*Nomor:* ${telepon}\n`+
-            `*Error:* ${e.message}\n\n`+
-            `Tolong cek panel admin secara manual.`;
-            
-        sendTelegramNotification(errorMsg);
-        alert("Gagal membuat user atau server. Cek console log & notifikasi Telegram admin.");
+        alert(`Gagal membuat user atau server. Cek console log & pastikan server API sudah berjalan: ${e.message}`);
     }
 }
 
