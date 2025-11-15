@@ -14,7 +14,7 @@ const global = {
   CURRENT_QRIS_KEY: "current_qris_session",
   STORAGE_KEY: "riwayat_transaksi_panel",
   // Tambahan: Link Login Panel (Asumsi menggunakan domain Pterodactyl yang sama)
-  PANEL_LOGIN_LINK: "https://panel.mikudevprivate.pteropanelku.biz.id" // GANTI DENGAN LINK PANEL ANDA
+  PANEL_LOGIN_LINK: "https://panel.xiao-store.web.id" // GANTI DENGAN LINK PANEL ANDA
 };
 
 // PACKAGE CONFIG (Tidak diubah dari jawaban terakhir)
