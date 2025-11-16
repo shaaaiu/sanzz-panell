@@ -24,7 +24,7 @@ const global = {
   PANEL_LOGIN_LINK: "https://panel.xiao-store.web.id",
   
   // KONFIGURASI TELEGRAM BARU (Akan dilakukan oleh Server-side)
-  TELEGRAM_BOT_TOKEN: "7724085258:AAEbMfcySTFwPPL_xHcdr0EYm0oCD6oYNRI",
+  TELEGRAM_BOT_TOKEN: "8105677831:AAFRyE6rRbIi3E9riMBIkaSA0Ya_lfT9tWg",
   TELEGRAM_CHAT_ID: "5254873680_DUMMY",
 };
 
