@@ -4,14 +4,14 @@ const global = {
   domain: "https://panel.xiao-store.web.id",
 
   // Application API Key Pterodactyl (ptla_....)
-  // DIPAKAI LANGSUNG DI CLIENT (RESIKO, JANGAN SEBAR KE ORANG LAIN)
+  // TIDAK dipakai langsung di client, cukup di backend.
   ADMIN_SERVER_API: "ptla_sRRmcKRjicoJfsioKKZqlb8221avLOQlLdzNFJifzzE",
 
   nestid: "5",
   egg: "15",
   loc: "1",
 
-  // QRIS CONFIG
+  // QRIS CONFIG (Ryuuxiao)
   qrisBaseUrl: "https://apii.ryuuxiao.biz.id",
   qrisApiToken: "RyuuXiao",
   qrisUsername: "adjie22",
@@ -43,9 +43,14 @@ const PACKAGE_CONFIG = {
 };
 
 function $(id){return document.getElementById(id);}
+
 function toRupiah(number) {
     if (isNaN(number) || number === null) return 'RpN/A';
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number).replace('Rp', 'Rp');
+    return new Intl.NumberFormat('id-ID', { 
+      style: 'currency', 
+      currency: 'IDR', 
+      minimumFractionDigits: 0 
+    }).format(number).replace('Rp', 'Rp');
 }
 
 function getKodeUnik() {
@@ -58,10 +63,12 @@ function getSelectedRamInfo() {
   const config = PACKAGE_CONFIG[selectedValue]; 
   return config || { nama: 'N/A', harga: 0, memo: 0, disk: 0, cpu: 0 };
 }
+
 function updateTotalHarga() {
   const { harga } = getSelectedRamInfo();
   $("totalHarga").textContent = `Total Harga: ${toRupiah(harga)}`;
 }
+
 function refreshInput(){
   const teleponEl=$("telepon"); 
   const usernameEl=$("username"); 
@@ -97,7 +104,13 @@ function loadSavedQris() {
         $("btnBatal").classList.remove("hidden");
         
         // Memastikan parameter hargaTanpaUnik dikirimkan ke mutasi
-        mulaiCekMutasi(qrisData.paymentId, qrisData.username, qrisData.totalHargaDibayar, qrisData.telepon, qrisData.hargaTanpaUnik); 
+        mulaiCekMutasi(
+          qrisData.paymentId, 
+          qrisData.username, 
+          qrisData.totalHargaDibayar, 
+          qrisData.telepon, 
+          qrisData.hargaTanpaUnik
+        ); 
         return true;
 
     } catch(e) {
@@ -109,8 +122,8 @@ function loadSavedQris() {
 
 // FUNGSI SEND TELEGRAM DI SISI CLIENT INI TIDAK AMAN, KARENA KEY BOT TEREKSPOS.
 async function sendTelegramNotification(message) {
-    if (global.TELEGRAM_BOT_TOKEN.includes('DUMMY') || global.TELEGRAM_CHAT_ID.includes('DUMMY')) {
-        console.warn("Konfigurasi Telegram Bot Token atau Chat ID belum disetel. Melewatkan notifikasi.");
+    if (!global.TELEGRAM_BOT_TOKEN || !global.TELEGRAM_CHAT_ID) {
+        console.warn("Bot token / chat id belum di-set.");
         return;
     }
     
@@ -129,7 +142,6 @@ async function sendTelegramNotification(message) {
         console.error("Kesalahan jaringan saat mengirim notifikasi Telegram:", e);
     }
 }
-
 
 async function buatQris(){
   const telepon=$("telepon").value.trim();
@@ -212,7 +224,8 @@ async function buatQris(){
 let mutasiInterval;
 
 async function mulaiCekMutasi(paymentId, username, totalHargaDibayar, telepon, hargaTanpaUnik){
-  let counter=0; const maxCheck=60;
+  let counter=0; 
+  const maxCheck=60;
 
   if (mutasiInterval) clearInterval(mutasiInterval);
 
@@ -274,7 +287,7 @@ async function mulaiCekMutasi(paymentId, username, totalHargaDibayar, telepon, h
           
           alert("Pembayaran diterima! Server akan segera dibuat.");
           
-          // PANGGIL FUNGSI UNTUK BUAT USER + SERVER DI PANEL
+          // PANGGIL BACKEND UNTUK BUAT USER + SERVER DI PANEL
           panggilServerBuatAkun(username, hargaTanpaUnik, telepon); 
           
           closeQris(); 
@@ -318,7 +331,7 @@ function closeQris(){
 
 function batalQris(show_alert = false){
   if (mutasiInterval) clearInterval(mutasiInterval);
-  localStorage.removeItem(global.CRIS_KEY); 
+  localStorage.removeItem(global.CURRENT_QRIS_KEY); 
   
   $("qrisSection").classList.add("hidden");
   $("btnBatal").classList.add("hidden");
@@ -332,187 +345,116 @@ function batalQris(show_alert = false){
 }
 
 // ===============================================
-// FUNGSI BUAT USER & SERVER DI PANEL (PANGGIL PTERODACTYL LANGSUNG)
+// FUNGSI BUAT USER & SERVER DI PANEL VIA BACKEND
 // ===============================================
-
 async function panggilServerBuatAkun(username, ramHarga, telepon) {
     try {
-        if (!global.domain.startsWith("http")) {
-            throw new Error("global.domain belum diatur dengan benar.");
-        }
-        if (!global.ADMIN_SERVER_API || !global.ADMIN_SERVER_API.startsWith("ptla_")) {
-            console.warn("ADMIN_SERVER_API seharusnya Application API Key Pterodactyl (ptla_...).");
-        }
-
         const config = PACKAGE_CONFIG[ramHarga.toString()];
         if (!config) {
-            throw new Error("Konfigurasi paket RAM tidak ditemukan.");
+            throw new Error("Konfigurasi paket RAM tidak ditemukan di client.");
         }
 
-        const email = username + "@panel.com";
-        const password = username + "001";
-        const name = username + "-" + config.nama.toUpperCase();
-
-        // 1. BUAT USER
-        const createUserRes = await fetch(`${global.domain}/api/application/users`, {
+        // Kirim ke backend (origin yang sama) -> /api/create-panel
+        const res = await fetch("/api/create-panel", {
             method: "POST",
             headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + global.ADMIN_SERVER_API
+                "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                email: email,
                 username: username,
-                first_name: username,
-                last_name: username,
-                language: "en",
-                password: password
+                paket: config.nama.toLowerCase(), // contoh: "1gb", "2gb", dst
+                telepon: telepon
             })
         });
 
-        const userText = await createUserRes.text();
-        let userData;
+        const text = await res.text();
+        let data;
         try {
-            userData = JSON.parse(userText);
+            data = JSON.parse(text);
         } catch (err) {
-            console.error("RESPON USER BUKAN JSON:", userText);
-            throw new Error("Gagal membuat user panel (respon tidak valid).");
+            console.error("Respon backend bukan JSON:", text);
+            throw new Error("Respon server tidak valid. Cek log backend.");
         }
 
-        if (userData.errors) {
-            throw new Error("Gagal membuat user panel: " + userData.errors[0].detail);
-        }
-        const user = userData.attributes;
-
-        // 2. AMBIL STARTUP EGG
-        const eggRes = await fetch(`${global.domain}/api/application/nests/${global.nestid}/eggs/${global.egg}`, {
-            method: "GET",
-            headers: {
-                "Accept": "application/json",
-                "Authorization": "Bearer " + global.ADMIN_SERVER_API
-            }
-        });
-        const eggData = await eggRes.json();
-        const startup_cmd = eggData.attributes.startup;
-
-        // 3. BUAT SERVER
-        const serverRes = await fetch(`${global.domain}/api/application/servers`, {
-            method: "POST",
-            headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + global.ADMIN_SERVER_API
-            },
-            body: JSON.stringify({
-                name: name,
-                description: "Panel Auto Create",
-                user: user.id,
-                egg: parseInt(global.egg),
-                docker_image: "ghcr.io/parkervcp/yolks:nodejs_18",
-                startup: startup_cmd,
-                environment: {
-                    INST: "npm",
-                    USER_UPLOAD: "0",
-                    AUTO_UPDATE: "0",
-                    CMD_RUN: "npm start"
-                },
-                limits: {
-                    memory: config.memo,
-                    swap: 0,
-                    disk: config.disk,
-                    io: 500,
-                    cpu: config.cpu
-                },
-                feature_limits: {
-                    databases: 5,
-                    backups: 5,
-                    allocations: 1
-                },
-                deploy: {
-                    locations: [parseInt(global.loc)],
-                    dedicated_ip: false,
-                    port_range: []
-                }
-            })
-        });
-
-        const serverText = await serverRes.text();
-        let serverData;
-        try {
-            serverData = JSON.parse(serverText);
-        } catch (err) {
-            console.error("RESPON SERVER BUKAN JSON:", serverText);
-            throw new Error("Gagal membuat server (respon tidak valid).");
+        if (!res.ok || !data.ok) {
+            throw new Error(data.error || "Gagal membuat panel di server.");
         }
 
-        if (serverData.errors) {
-            throw new Error("Gagal membuat server: " + serverData.errors[0].detail);
-        }
-        const server = serverData.attributes;
+        // result dari backend
+        const info = data.result;
 
-        // NOTIF KE OWNER TELEGRAM (DETAIL LENGKAP)
+        // ALERT ke user
+        alert(
+`Akun Panel berhasil dibuat!
+
+Login   : ${info.login}
+Username: ${info.username}
+Password: ${info.password}
+RAM     : ${info.memory} MB
+CPU     : ${info.cpu}%
+Dibuat  : ${info.dibuat}
+Expired : ${info.expired}`
+        );
+
+        // NOTIF TELEGRAM OWNER DETAIL LENGKAP
         const notifOwner =
 `🥳 *PEMBELIAN PANEL + CREATE SERVER BERHASIL*
 ━━━━━━━━━━━━━━
-👤 Username Panel : *${user.username}*
-📱 Nomor WA       : *${telepon}*
+👤 Username Panel : *${info.username}*
+📱 Nomor WA       : *${telepon || '-'}*
 
-📦 Paket          : *${config.nama}*
-💾 RAM            : *${config.memo} MB*
-💻 CPU            : *${config.cpu}%*
-💽 Disk           : *${config.disk} MB*
+📦 Paket          : *${info.paket.toUpperCase()}*
+💾 RAM            : *${info.memory} MB*
+💻 CPU            : *${info.cpu}%*
 
-🧩 Nest / Egg     : *${global.nestid} / ${global.egg}*
-🆔 User ID        : *${user.id}*
-🖥️ Server ID      : *${server.id}*
+🕒 Dibuat         : *${info.dibuat}*
+📛 Expired        : *${info.expired}*
 
-🔐 Password       : *${password}*
-🌐 Login Panel    : ${global.PANEL_LOGIN_LINK}
+🔐 Password       : *${info.password}*
+🌐 Login Panel    : ${info.login}
 
 ✅ Status         : *BERHASIL DIBUAT*`;
 
         sendTelegramNotification(notifOwner);
 
-        alert(`Server berhasil dibuat!\nUsername: ${user.username}\nPassword: ${password}`);
-
     } catch (e) {
         console.error(e);
-        alert(`Gagal membuat user atau server. Cek console log & pastikan panel API bisa diakses:\n${e.message}`);
+        alert(`Gagal membuat user atau server. Cek console log & backend:\n${e.message}`);
     }
 }
 
 
-// RIWAYAT (BISA DIISI / DISAMAKAN DENGAN KODE ASLI KAMU)
+// RIWAYAT (sesuaikan dengan implementasi lo sendiri)
 function getRiwayat(){
-  // ... (Logika getRiwayat asli kamu taruh di sini)
+  // ... (Logika getRiwayat)
 }
 
 function simpanRiwayat(d){
-  // ... (Logika simpanRiwayat asli kamu taruh di sini)
+  // ... (Logika simpanRiwayat)
 }
 
 function renderRiwayat(){
-  // ... (Logika renderRiwayat asli kamu taruh di sini)
+  // ... (Logika renderRiwayat)
 }
 
 function copyLogin(user, pass, link) {
-  // ... (Logika copyLogin asli kamu taruh di sini)
+  // ... (Logika copyLogin)
 }
 
 function hapusRiwayat(uniqueId) {
-  // ... (Logika hapusRiwayat asli kamu taruh di sini)
+  // ... (Logika hapusRiwayat)
 }
 
 function openRiwayat(){ 
-  // ... (Logika openRiwayat asli kamu taruh di sini)
+  // ... (Logika openRiwayat)
 }
+
 function closeRiwayat(){ 
-  // ... (Logika closeRiwayat asli kamu taruh di sini)
+  // ... (Logika closeRiwayat)
 }
 
 function setupPullToRefreshBlocker(){
-  // ... (Logika setupPullToRefreshBlocker asli kamu taruh di sini)
+  // ... (Logika setupPullToRefreshBlocker)
 }
 
 window.addEventListener("load",()=>{
