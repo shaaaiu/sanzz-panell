@@ -26,32 +26,28 @@
       <section class="card">
         <h2 class="card-title">Form Pemesanan</h2>
         <p class="card-desc">
-          Masukkan (untuk notifikasi admin),username, dan pilih paket panel. Server akan dibuat otomatis setelah pembayaran sukses. **(Wajib transfer sesuai total harga + kode unik)**
+          Masukkan nomor WhatsApp, username panel, dan pilih paket. Server akan dibuat otomatis setelah pembayaran sukses.  
+          <b>(Wajib transfer sesuai total harga + kode unik)</b>
         </p>
 
+        <!-- INPUT WhatsApp -->
         <div class="form-group">
             <label for="telepon">Nomor Telepon (WhatsApp/Aktif)</label>
-            <input
-                type="tel"
-                id="telepon"
-                placeholder="Contoh: 081234567890"
-            />
+            <input type="tel" id="telepon" placeholder="Contoh: 081234567890"/>
         </div>
 
+        <!-- INPUT Username -->
         <div class="form-group">
           <label for="username">Username</label>
-          <input
-            type="text"
-            id="username"
-            placeholder="Masukkan username panel"
-          />
+          <input type="text" id="username" placeholder="Masukkan username panel"/>
         </div>
 
+        <!-- SELECT RAM -->
         <div class="form-group">
           <label for="ram">Pilih Paket RAM</label>
           <select id="ram" onchange="updateTotalHarga()">
             <option value="">Pilih paket...</option>
-            <option value="1">500 MB - Rp1</option> 
+            <option value="1">500 MB - Rp1</option>
             <option value="2000">1 GB - Rp2.000</option>
             <option value="3000">2 GB - Rp3.000</option>
             <option value="4000">3 GB - Rp4.000</option>
@@ -65,22 +61,21 @@
             <option value="15000">UNLI - Rp15.000</option>
           </select>
         </div>
-        
+
+        <!-- TOTAL HARGA -->
         <p id="totalHarga" class="total-harga">Total Harga: Rp0</p>
-        
+
+        <!-- BUTTON ROW -->
         <div class="buttons-row">
           <button class="btn btn-primary" type="button" onclick="buatQris()">
             Buat QRIS
           </button>
+
           <button class="btn btn-ghost" type="button" onclick="refreshInput()">
             Refresh Input
           </button>
-          <button
-            id="btnBatal"
-            class="btn btn-danger hidden"
-            type="button"
-            onclick="batalQris(true)"
-          >
+
+          <button id="btnBatal" class="btn btn-danger hidden" type="button" onclick="batalQris(true)">
             Batalkan
           </button>
         </div>
@@ -88,10 +83,12 @@
         <p id="loadingText" class="loading hidden">Membuat QRIS...</p>
       </section>
 
+      <!-- QRIS SECTION -->
       <section id="qrisSection" class="card hidden">
         <h2 class="card-title">QRIS Pembayaran</h2>
         <p class="card-desc">
-          Scan QRIS berikut lalu selesaikan pembayaran sebelum waktu habis. Pastikan jumlah transfer **sama persis** dengan total harga yang ditampilkan (termasuk kode unik).
+          Scan QRIS berikut lalu selesaikan pembayaran. Pastikan jumlah transfer
+          **sama persis** (termasuk kode unik).
         </p>
 
         <div class="qr-wrapper">
@@ -101,28 +98,32 @@
         <pre id="detailPembayaran" class="detail-text"></pre>
       </section>
 
+      <!-- RIWAYAT SECTION -->
       <section class="card">
         <h2 class="card-title">Riwayat Transaksi</h2>
         <p class="card-desc">
-          Hanya tersimpan di perangkat ini. Gunakan riwayat untuk melihat detail login.
+          Riwayat tersimpan di perangkat ini. Gunakan untuk melihat ulang detail login panel.
         </p>
+
         <button class="btn btn-secondary" type="button" onclick="openRiwayat()">
           Lihat Riwayat Transaksi
         </button>
-        </section>
+      </section>
+
     </main>
   </div>
 
+  <!-- MODAL RIWAYAT -->
   <div id="riwayatModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
         <h3 class="modal-title">Daftar Riwayat Transaksi</h3>
         <span class="close-btn" onclick="closeRiwayat()">&times;</span>
       </div>
-      <div id="riwayatList" class="modal-body riwayat-list">
-        </div>
+      <div id="riwayatList" class="modal-body riwayat-list"></div>
     </div>
   </div>
+
   <script src="script.js"></script>
 </body>
 </html>
